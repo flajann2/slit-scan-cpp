@@ -1,0 +1,29 @@
+* Notes -- personal and "private"
+  As usual, I make no promises about my notes being
+  meaning anything to anyone but myself, nor being
+  uptodate. Please see the README for the official
+  documentation.
+** Math and logic transported from the Haskell version
+   I still need to fix the math in the Haskell version,
+   but I will do that in the C++ version instead. I think
+   it will be a lot easier to do, because with the Haskell verison
+   I had no way to see the results in realtime.
+
+   Once I do, I may backport it to Haskell.
+** Linear slit-scans (like in 2001), loop slit-scans (like with Dr. Who)
+   I want to support both. For the loop slit-scans, I am thinking
+   of allowing the loop to be specified by an SVG file. Or it could be
+   hand-drawn. Anything is possible.
+** The future
+   + I am speculating as to what a 3D version of slit-scan would be like.
+     it would definitely be very different from the traditional 2D approach.
+     It is an unexplored area that I find tantalizing.
+   + Once done and stable, I wish to launch a big marketing effort. Slit-scam
+     will remain in Open Source for the time being. But I want everyone
+     to know about it and start using it.
+   + Blender integration seems to be to be the obvious next step. It should
+     use the Blender UI. To that end, I should keep the math part seperate.
+   + Header-only code? I will take that approach here, and should I do a callable
+     library, it would be a simple matter of including the headers
+     and wrapping an API around them.
+

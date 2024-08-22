@@ -1,0 +1,11 @@
+* Slit Scan, C++ version
+  For reasons, we have decided to implement Slit Scan
+  in C++, and give it a nice GUI to boot.
+
+  The GUI situation is wanting in Haskell, alas. I
+  began this same effort as a CLI app, but then many
+  would not have an easy go using it.
+
+  So this will use GTK4 and gtkmm and all the lastest
+  features of C++23.
+

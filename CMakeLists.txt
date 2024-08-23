@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Project name and version
 project(slit-scan  LANGUAGES CXX)
 
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 option(ENABLE_EXAMPLES "Enable examples" ON)
 option(ENABLE_TESTS "Enable testing" OFF)
 option(ENABLE_DOCS "Enable documentation" OFF)

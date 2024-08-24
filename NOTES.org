@@ -28,4 +28,16 @@
    + Header-only code? I will take that approach here, and should I do a callable
      library, it would be a simple matter of including the headers
      and wrapping an API around them.
+** And now, for something completely different.
+   + The example code is almost doint the slit scan
+     the right way. It is doing it verticall, but
+     I must also do it horzontally. As such, I need to
+     compute all the slits and combine them in the end.
+     
+     The tricky bit is to compute the x coordinate to
+     insert the slit, which will vary as we approach 
+     the end of the gel.
 
+     I thought of doing all the slit computations up-front, but that
+     would be memory inneficient. So I will work out how to
+     do it properly.

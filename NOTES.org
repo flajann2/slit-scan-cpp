@@ -14,6 +14,8 @@
    I want to support both. For the loop slit-scans, I am thinking
    of allowing the loop to be specified by an SVG file. Or it could be
    hand-drawn. Anything is possible.
+** Build issues
+   + aura -S vtk
 ** The future
    + I am speculating as to what a 3D version of slit-scan would be like.
      it would definitely be very different from the traditional 2D approach.

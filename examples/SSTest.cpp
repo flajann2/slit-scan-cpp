@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
    * Define all parameters here                    */
   const int slitWidth = 4; // Width of each slit
   const int slitSpacing = 0; // Space between slits
-  const double perspective_factor = 20;
+  const double perspective_factor = 15;
   /*************************************************/
   
   const int slitHeight = dHeight; // Height of the slit (full height of the image)

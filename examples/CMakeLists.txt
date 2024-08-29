@@ -1,6 +1,7 @@
 ### Examples
 
 add_executable (VideoTest VideoTest.cpp)
+add_executable (CV2GTKVideoTest CV2GTKVideoTest.cpp)
 add_executable (SSTest SSTest.cpp)
 
 find_package(PkgConfig REQUIRED)
@@ -11,8 +12,9 @@ set(COMMON_LIBS
   ${FREETYPE_LIBRARIES}
   ${OpenCV_LIBS})
 
-target_link_libraries(VideoTest   PRIVATE ${COMMON_LIBS})
-target_link_libraries(SSTest      PRIVATE ${COMMON_LIBS})
+target_link_libraries(VideoTest       PRIVATE ${COMMON_LIBS})
+target_link_libraries(CV2GTKVideoTest PRIVATE ${COMMON_LIBS})
+target_link_libraries(SSTest          PRIVATE ${COMMON_LIBS})
 
 find_package(Freetype REQUIRED)
 pkg_check_modules(FREETYPE REQUIRED freetype2)

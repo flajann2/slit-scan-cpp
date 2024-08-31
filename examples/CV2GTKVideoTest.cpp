@@ -8,79 +8,108 @@
 
 using namespace std;
 
-class VideoWindow : public Gtk::Window {
+class VideoCanvas : public Gtk::DrawingArea {
 public:
-  VideoWindow() : vbox(Gtk::Orientation::VERTICAL) {
-        set_title("Video Stream");
-        set_default_size(800, 448);
+  VideoCanvas() : width_(800)
+                , height_(448)  {
 
-        // Create a vertical box to hold the image
-        set_child(vbox); // Add the box to the window
-
+ 
         // Create an Image widget to display the video
-        image.set_size_request(800, 448);
-        vbox.append(image); // Add the image to the box
-
+        image_.set_size_request(800, 448);
         show();
 
         // Start the video capture
-        capture.open(0); // Open the default camera
-        if (!capture.isOpened()) {
+        capture_.open(0); // Open the default camera
+        if (!capture_.isOpened()) {
             throw std::runtime_error("Unable to open camera");
         }
 
-        // Start the frame update loop
-        Glib::signal_idle().connect(sigc::mem_fun(*this,
-                                                  &VideoWindow::on_draw),
-                                    false);
+        //// // Start the frame update loop
+        //// Glib::signal_idle().connect(sigc::mem_fun(*this,
+        ////                                           &VideoWindow::on_draw),
+        ////                             false);
     }
+  ~VideoCanvas() {}
+  
+  void size_allocate (Gtk::Allocation& allocation, int baseline = -1) {
+    // Call the parent to do whatever needs to be done:
+    DrawingArea::size_allocate(allocation, baseline);
+	
+    // Remember the new allocated size for resizing operation:
+    width_ = allocation.get_width();
+    height_ = allocation.get_height();
+  }
 
-  bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr) override {
-        cv::Mat frame;
-        capture >> frame; // Capture a new frame
+  // This is not a normal slot.
+  bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
+    cv::Mat frame;
+    capture_ >> frame; // Capture a new frame
 
-        if (!frame.empty()) {
-            // Convert the frame from BGR to RGB
-            cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+    if (!frame.empty()) {
+      // Convert the frame from BGR to RGB
+      cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+      
+      // Create a GdkPixbuf from the OpenCV Mat
+      Glib::RefPtr<Gdk::Pixbuf> pixbuf =
+        Gdk::Pixbuf::create_from_data(frame.data,
+                                      Gdk::Colorspace::RGB,
+                                      false,
+                                      8,
+                                      frame.cols,
+                                      frame.rows,
+                                      frame.step);
 
-            // Create a GdkPixbuf from the OpenCV Mat
-            Glib::RefPtr<Gdk::Pixbuf> pixbuf =
-              Gdk::Pixbuf::create_from_data(frame.data,
-                                            Gdk::Colorspace::RGB,
-                                            false,
-                                            8,
-                                            frame.cols,
-                                            frame.rows,
-                                            frame.step);
+      //cout << "frane.data " << frame.data << endl;
+      cout << "frame.step " << frame.step << endl;
+      cout << "frame.step[1] " << frame.step[1] << endl;
+      /// // Update the image widget
+      image_.set(pixbuf);
 
-            //cout << "frane.data " << frame.data << endl;
-            cout << "frame.step " << frame.step << endl;
-            cout << "frame.step[1] " << frame.step[1] << endl;
-            /// // Update the image widget
-            image.set(pixbuf);
-        }
-        return true; // Keep the loop running
+      // Display
+      Gdk::Cairo::set_source_pixbuf(cr, pixbuf);
+      cr->paint();
     }
-
+    return true; // Keep the loop running
+  }
+  
+protected:
+  int width_;
+  int height_;
+  
 private:
-  Gtk::Image image;
-  Gtk::Box vbox;
-  cv::VideoCapture capture;
+  Gtk::Image image_;
+  cv::VideoCapture capture_;
+};
+
+class VideoWindow : public Gtk::Window {
+public:
+  VideoWindow(VideoCanvas& vc) : vc_(vc)
+                               , vbox_(Gtk::Orientation::VERTICAL) {
+    set_title("Video Stream");
+    // Create a vertical box to hold the image
+    set_child(vbox_); // Add the box to the window
+  }
+
+protected:
+  VideoCanvas& vc_;
+  Gtk::Box  vbox_;
 };
 
 class VideoApp : public Gtk::Application {
 public:
   VideoApp(std::string appname = "de.atomlogik.samplevideo")
-    : Gtk::Application(appname) {}
+    : Gtk::Application(appname)
+    , window_(vc_) {}
 
 protected:
-  VideoWindow window;
+  VideoCanvas vc_;
+  VideoWindow window_;
   
   // Override the startup method to create the window and ball
-  void on_activate() override {
-    window.set_title("Video App");
-    window.show();
-    this->add_window(window);
+  virtual void on_activate() override {
+    window_.set_title("Video App");
+    window_.show();
+    this->add_window(window_);
   }
 };
 

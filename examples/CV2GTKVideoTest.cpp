@@ -1,6 +1,9 @@
 // CV2GTKVideoTest -- since we will be doing this a lot
 
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/highgui.hpp"
 #include <gtkmm.h>
 #include <gdkmm/pixbuf.h>
 #include <iostream>
@@ -13,21 +16,25 @@ public:
   VideoCanvas() : width_(800)
                 , height_(448)  {
 
- 
-        // Create an Image widget to display the video
-        image_.set_size_request(800, 448);
-        show();
+    property_content_width() = width_;
+    property_content_height() = height_;
+    // Create an Image widget to display the video
+    image_.set_size_request(800, 448);
+    show();
 
-        // Start the video capture
-        capture_.open(0); // Open the default camera
-        if (!capture_.isOpened()) {
-            throw std::runtime_error("Unable to open camera");
-        }
-
-        //// // Start the frame update loop
-        //// Glib::signal_idle().connect(sigc::mem_fun(*this,
-        ////                                           &VideoWindow::on_draw),
-        ////                             false);
+    // Start the video capture
+    capture_.open(0); // Open the default camera
+    if (!capture_.isOpened()) {
+      throw std::runtime_error("Unable to open camera");
+    }
+    set_draw_func(sigc::mem_fun(*this, &VideoCanvas::on_draw));
+    // Lets refresh drawing area very now and then.
+    //// update_connection_ = Glib::signal_timeout()
+    ////   .connect(sigc::mem_fun(*this, &VideoCanvas::on_draw), 100);
+    //// // Start the frame update loop
+    //// Glib::signal_idle().connect(sigc::mem_fun(*this,
+    ////                                           &VideoCanvas::on_draw),
+    ////                             false);
     }
   ~VideoCanvas() {}
   
@@ -40,8 +47,16 @@ public:
     height_ = allocation.get_height();
   }
 
-  // This is not a normal slot.
-  bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
+  bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr
+               , int width
+               , int height) {
+    width_ = width;
+    height_ = height;
+    cout << "(w,h) = (" << width_ << "," << height_ << ")" << endl;
+
+    auto style_context = get_style_context();
+    style_context->render_background(cr, 0, 0, width, height);
+    
     cv::Mat frame;
     capture_ >> frame; // Capture a new frame
 
@@ -77,6 +92,7 @@ protected:
   int height_;
   
 private:
+	sigc::connection update_connection_;
   Gtk::Image image_;
   cv::VideoCapture capture_;
 };
@@ -88,6 +104,10 @@ public:
     set_title("Video Stream");
     // Create a vertical box to hold the image
     set_child(vbox_); // Add the box to the window
+    vbox_.append(vc_);
+    vbox_.set_vexpand(true);
+    vbox_.set_hexpand(true);
+    cout << "VideoWindow constructed." << endl;
   }
 
 protected:
@@ -110,6 +130,7 @@ protected:
     window_.set_title("Video App");
     window_.show();
     this->add_window(window_);
+    cout << "on_activate called." << endl;
   }
 };
 

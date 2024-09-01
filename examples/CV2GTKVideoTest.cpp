@@ -1,4 +1,6 @@
 // CV2GTKVideoTest -- since we will be doing this a lot
+// This code demonstrates how to get a OpenCV video stream
+// to display in a gtkmm window.
 
 //#include <opencv2/opencv.hpp>
 #include "opencv2/imgproc.hpp"
@@ -19,7 +21,7 @@ public:
     property_content_width() = width_;
     property_content_height() = height_;
     // Create an Image widget to display the video
-    image_.set_size_request(800, 448);
+    //image_.set_size_request(800, 448);
     show();
 
     // Start the video capture
@@ -28,13 +30,9 @@ public:
       throw std::runtime_error("Unable to open camera");
     }
     set_draw_func(sigc::mem_fun(*this, &VideoCanvas::on_draw));
-    // Lets refresh drawing area very now and then.
-    //// update_connection_ = Glib::signal_timeout()
-    ////   .connect(sigc::mem_fun(*this, &VideoCanvas::on_draw), 100);
-    //// // Start the frame update loop
-    //// Glib::signal_idle().connect(sigc::mem_fun(*this,
-    ////                                           &VideoCanvas::on_draw),
-    ////                             false);
+    Glib::signal_timeout()
+      .connect(sigc::bind(sigc::mem_fun(*this, &VideoCanvas::refresh_window)),
+               1000/60); // 60 times a second
     }
   ~VideoCanvas() {}
   
@@ -53,9 +51,6 @@ public:
     width_ = width;
     height_ = height;
     cout << "(w,h) = (" << width_ << "," << height_ << ")" << endl;
-
-    auto style_context = get_style_context();
-    style_context->render_background(cr, 0, 0, width, height);
     
     cv::Mat frame;
     capture_ >> frame; // Capture a new frame
@@ -63,22 +58,25 @@ public:
     if (!frame.empty()) {
       // Convert the frame from BGR to RGB
       cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+      // resize to current canvas size
+      cv::Mat resized_frame;
+      cv::resize(frame, resized_frame
+                 , cv::Size(width_, height_)
+                 , cv::INTER_LINEAR);      
       
       // Create a GdkPixbuf from the OpenCV Mat
       Glib::RefPtr<Gdk::Pixbuf> pixbuf =
-        Gdk::Pixbuf::create_from_data(frame.data,
+        Gdk::Pixbuf::create_from_data(resized_frame.data,
                                       Gdk::Colorspace::RGB,
                                       false,
                                       8,
-                                      frame.cols,
-                                      frame.rows,
-                                      frame.step);
+                                      resized_frame.cols,
+                                      resized_frame.rows,
+                                      resized_frame.step);
 
-      //cout << "frane.data " << frame.data << endl;
-      cout << "frame.step " << frame.step << endl;
-      cout << "frame.step[1] " << frame.step[1] << endl;
-      /// // Update the image widget
-      image_.set(pixbuf);
+      // Update the image widget
+      //image_.set(pixbuf);
 
       // Display
       Gdk::Cairo::set_source_pixbuf(cr, pixbuf);
@@ -87,32 +85,31 @@ public:
     return true; // Keep the loop running
   }
   
+  bool refresh_window() {
+    queue_draw();
+    return true;
+  }
+  
 protected:
   int width_;
   int height_;
   
 private:
 	sigc::connection update_connection_;
-  Gtk::Image image_;
+  //Gtk::Image image_;
   cv::VideoCapture capture_;
 };
 
 class VideoWindow : public Gtk::Window {
 public:
-  VideoWindow(VideoCanvas& vc) : vc_(vc)
-                               , vbox_(Gtk::Orientation::VERTICAL) {
+  VideoWindow(VideoCanvas& vc) : vc_(vc) {
     set_title("Video Stream");
-    // Create a vertical box to hold the image
-    set_child(vbox_); // Add the box to the window
-    vbox_.append(vc_);
-    vbox_.set_vexpand(true);
-    vbox_.set_hexpand(true);
-    cout << "VideoWindow constructed." << endl;
+    set_child(vc_);
   }
 
+  
 protected:
   VideoCanvas& vc_;
-  Gtk::Box  vbox_;
 };
 
 class VideoApp : public Gtk::Application {

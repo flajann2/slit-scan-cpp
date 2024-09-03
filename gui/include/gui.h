@@ -2,7 +2,7 @@
 #pragma once
 
 #include <gtkmm.h>
-#include <glibmm/main.h> // Include for Glib timer
+#include <glibmm/main.h>
 
 #include <gtkmm/application.h>
 #include <gtkmm/window.h>
@@ -24,4 +24,4 @@ class Pane : public Gtk::DrawingArea {};
 // in project reference must appear at the end
 
 #include <AppWindow.h>
-
+#include <menu.h>

@@ -64,22 +64,6 @@ private:
 
 int main(int argc, char* argv[]) {
   UITestApplication app;
-    
-  /// // Load the UI from the Glade file
-  /// auto builder = Gtk::Builder::create();
-  /// builder->add_from_file("uitest");
-  
-  /// // Get references to the window and menu bar
-  /// auto window = builder->get_object<Gtk::Window>("main_window");
-  /// //auto menubar = builder->get_object<Gio::Menu>("menubar");
-  
-  /// // Create menu items using the builder
-
-  /// // Connect the quit menu item to the application's quit function
-  /// auto action = Gio::SimpleAction::create("quit-action");
-
-  /// window->show();
-
   return app.run(argc, argv);
 }
 

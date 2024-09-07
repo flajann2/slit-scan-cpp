@@ -4,13 +4,48 @@
   <ui>
 	(2,None,None,"uitest",None,None,None,None,None,None,None)
   </ui>
+  <ui_library>
+	(2,"gtk","4.14",None),
+	(2,"libadwaita","1.4",None)
+  </ui_library>
   <object>
-	(2,1,"GtkWindow","main_window",None,None,None,None,-1,None,None)
+	(2,1,"GtkWindow","main_window",None,None,None,None,-1,None,None),
+	(2,2,"GtkBox","main_box",1,None,None,None,-1,None,None),
+	(2,4,"GtkButton","main_tooling",2,None,None,None,1,None,None),
+	(2,5,"GtkBox","main_toolbar",2,None,None,None,None,None,None),
+	(2,6,"GtkButton","main_save",5,None,None,None,None,None,None),
+	(2,7,"GtkButton","main_save_as",5,None,None,None,1,None,None),
+	(2,8,"GtkButton","main_quit",5,None,None,None,2,None,None)
   </object>
   <object_property>
 	(2,1,"GtkWindow","default-height","300",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","default-width","500",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","startup-id","main_window",None,None,None,None,None,None,None,None,None),
-	(2,1,"GtkWindow","title","UI Test",None,None,None,None,None,None,None,None,None)
+	(2,1,"GtkWindow","title","UI Test",None,None,None,None,None,None,None,None,None),
+	(2,2,"GtkOrientable","orientation","vertical",None,None,None,None,None,None,None,None,None),
+	(2,4,"GtkButton","label","Tooling",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkWidget","margin-bottom","1",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkWidget","margin-end","1",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkWidget","margin-start","1",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkWidget","margin-top","1",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkButton","label","Save",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkWidget","margin-bottom","1",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkWidget","margin-end","1",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkWidget","margin-start","1",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkWidget","margin-top","1",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkButton","label","Save As",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkWidget","margin-bottom","1",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkWidget","margin-end","1",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkWidget","margin-start","1",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkWidget","margin-top","1",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkButton","label","Quit",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkWidget","margin-bottom","1",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkWidget","margin-end","1",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkWidget","margin-start","1",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkWidget","margin-top","1",None,None,None,None,None,None,None,None,None)
   </object_property>
 </cambalache-project>

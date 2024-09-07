@@ -1,11 +1,61 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- Created with Cambalache 0.90.4 -->
 <interface>
-  <requires lib="gtk" version="4.6"/>
+  <requires lib="gtk" version="4.14"/>
+  <requires lib="libadwaita" version="1.4"/>
   <object class="GtkWindow" id="main_window">
     <property name="default-height">300</property>
     <property name="default-width">500</property>
     <property name="startup-id">main_window</property>
     <property name="title">UI Test</property>
+    <child>
+      <object class="GtkBox" id="main_box">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkBox" id="main_toolbar">
+            <property name="hexpand">True</property>
+            <property name="margin-bottom">1</property>
+            <property name="margin-end">1</property>
+            <property name="margin-start">1</property>
+            <property name="margin-top">1</property>
+            <child>
+              <object class="GtkButton" id="main_save">
+                <property name="hexpand">True</property>
+                <property name="label">Save</property>
+                <property name="margin-bottom">1</property>
+                <property name="margin-end">1</property>
+                <property name="margin-start">1</property>
+                <property name="margin-top">1</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="main_save_as">
+                <property name="hexpand">True</property>
+                <property name="label">Save As</property>
+                <property name="margin-bottom">1</property>
+                <property name="margin-end">1</property>
+                <property name="margin-start">1</property>
+                <property name="margin-top">1</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="main_quit">
+                <property name="hexpand">True</property>
+                <property name="label">Quit</property>
+                <property name="margin-bottom">1</property>
+                <property name="margin-end">1</property>
+                <property name="margin-start">1</property>
+                <property name="margin-top">1</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="main_tooling">
+            <property name="label">Tooling</property>
+          </object>
+        </child>
+      </object>
+    </child>
   </object>
 </interface>

@@ -3,7 +3,7 @@
 <interface>
   <!-- interface-name slitscan_main.ui -->
   <requires lib="gtk" version="4.14"/>
-  <object class="GtkApplicationWindow" id="main_window">
+  <object class="GtkWindow" id="main_window">
     <property name="default-height">600</property>
     <property name="default-width">700</property>
     <property name="title">Slit Scan</property>

@@ -3,69 +3,14 @@
 <interface>
   <!-- interface-name slitscan_main.ui -->
   <requires lib="gtk" version="4.14"/>
-  <object class="GtkWindow" id="main_window">
-    <property name="default-height">600</property>
-    <property name="default-width">700</property>
+  <object class="GtkWindow" id="ss_main_window">
+    <property name="default-height">400</property>
+    <property name="default-width">600</property>
     <property name="title">Slit Scan</property>
     <child>
-      <object class="GtkBox" id="main_box_vert">
-        <property name="orientation">vertical</property>
-        <property name="valign">start</property>
-        <child>
-          <object class="GtkBox" id="main_box_menu">
-            <property name="spacing">1</property>
-            <property name="valign">start</property>
-            <child>
-              <object class="GtkButton" id="main_new_button">
-                <property name="label">New</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="main_save_button">
-                <property name="label">Save</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="main_load_button">
-                <property name="label">Load</property>
-              </object>
-            </child>
-            <style>
-              <class/>
-              <class/>
-            </style>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox" id="main_box_actions">
-            <property name="spacing">1</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox" id="man_box_ss">
-            <property name="height-request">300</property>
-            <property name="spacing">1</property>
-            <property name="valign">baseline</property>
-            <child>
-              <object class="GtkBox" id="main_box_slit_left">
-                <property name="orientation">vertical</property>
-                <property name="spacing">1</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkDrawingArea">
-                <property name="content-height">300</property>
-                <property name="content-width">200</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkBox" id="main_box_right_slit">
-                <property name="orientation">vertical</property>
-                <property name="spacing">1</property>
-              </object>
-            </child>
-          </object>
-        </child>
+      <object class="GtkGrid" id="ss_main_grid">
+        <property name="column-spacing">1</property>
+        <property name="row-spacing">1</property>
       </object>
     </child>
   </object>

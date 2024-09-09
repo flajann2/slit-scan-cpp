@@ -2,20 +2,68 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <cambalache-project version="0.17.3" target_tk="gtk-4.0">
   <ui>
-	(2,None,"slitscan_main.ui","slitscan_main.ui",None,None,None,None,None,None,None)
+	(2,None,"slitscan_main.ui","slitscan_main.ui",None,None,None,None,None,None,None),
+	(4,None,None,"file_gel_select.ui","File selector to load gels\n",None,None,None,None,None,None)
   </ui>
   <ui_library>
-	(2,"gtk","4.14",None)
+	(2,"gtk","4.14",None),
+	(4,"gtk","4.14",None)
   </ui_library>
   <object>
 	(2,1,"GtkWindow","ss_main_window",None,None,None,None,-1,None,None),
-	(2,2,"GtkGrid","ss_main_grid",1,None,None,None,-1,None,None)
+	(2,2,"GtkGrid","ss_main_grid",1,None,None,None,-1,None,None),
+	(2,3,"GtkBox","ss_main_proj_tools",2,None,None,None,None,None,None),
+	(2,4,"GtkButton","ss_main_load",3,None,None,None,None,None,None),
+	(2,5,"GtkButton","ss_main_save",3,None,None,None,1,None,None),
+	(2,6,"GtkButton","ss_main_save_as",3,None,None,None,2,None,None),
+	(2,7,"GtkButton","ss_main_new",3,None,None,None,3,None,None),
+	(2,8,"GtkButton","ss_main_settings",3,None,None,None,4,None,None),
+	(2,9,"GtkBox","ss_main_gel_left",2,None,None,None,None,None,None),
+	(2,10,"GtkBox","ss_main_gel_right",2,None,None,None,4,None,None),
+	(2,11,"GtkListBox","ss_main_gel_list_left",9,None,None,None,1,None,None),
+	(2,12,"GtkListBox","ss_main_gel_list_right",10,None,None,None,1,None,None),
+	(2,13,"GtkButton","ss_main_gel_get_left",9,None,None,None,None,None,None),
+	(2,14,"GtkButton","ss_main_gel_get_right",10,None,None,None,None,None,None),
+	(2,15,"GtkDrawingArea","ss_main_canvas",2,None,None,None,2,None,None),
+	(4,1,"GtkFileChooserNative","file_gel_chooser",None,None,None,None,-1,None,None)
   </object>
   <object_property>
 	(2,1,"GtkWindow","default-height","400",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","default-width","600",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","title","Slit Scan",None,None,None,None,None,None,None,None,None),
 	(2,2,"GtkGrid","column-spacing","1",None,None,None,None,None,None,None,None,None),
-	(2,2,"GtkGrid","row-spacing","1",None,None,None,None,None,None,None,None,None)
+	(2,2,"GtkGrid","row-spacing","1",None,None,None,None,None,None,None,None,None),
+	(2,3,"GtkBox","spacing","1",None,None,None,None,None,None,None,None,None),
+	(2,4,"GtkButton","label","Load",None,None,None,None,None,None,None,None,None),
+	(2,5,"GtkButton","label","Save",None,None,None,None,None,None,None,None,None),
+	(2,6,"GtkButton","label","Save as",None,None,None,None,None,None,None,None,None),
+	(2,7,"GtkButton","label","New",None,None,None,None,None,None,None,None,None),
+	(2,8,"GtkButton","label","Settings",None,None,None,None,None,None,None,None,None),
+	(2,9,"GtkOrientable","orientation","vertical",None,None,None,None,None,None,None,None,None),
+	(2,10,"GtkOrientable","orientation","vertical",None,None,None,None,None,None,None,None,None),
+	(2,13,"GtkButton","label","Left Gel Load",None,None,None,None,None,None,None,None,None),
+	(2,14,"GtkButton","label","Right Gel Load",None,None,None,None,None,None,None,None,None),
+	(4,1,"GtkFileChooser","select-multiple","True",None,None,None,None,None,None,None,None,None),
+	(4,1,"GtkNativeDialog","modal","True",None,None,None,None,None,None,None,None,None),
+	(4,1,"GtkNativeDialog","title","Gel Chooser",None,None,None,None,None,None,None,None,None),
+	(4,1,"GtkNativeDialog","visible","True",None,None,None,None,None,None,None,None,None)
   </object_property>
+  <object_layout_property>
+	(2,2,3,"GtkGridLayoutChild","column","0",None,None,None,None),
+	(2,2,3,"GtkGridLayoutChild","column-span","7",None,None,None,None),
+	(2,2,3,"GtkGridLayoutChild","row","0",None,None,None,None),
+	(2,2,3,"GtkGridLayoutChild","row-span","1",None,None,None,None),
+	(2,2,9,"GtkGridLayoutChild","column","0",None,None,None,None),
+	(2,2,9,"GtkGridLayoutChild","column-span","2",None,None,None,None),
+	(2,2,9,"GtkGridLayoutChild","row","1",None,None,None,None),
+	(2,2,9,"GtkGridLayoutChild","row-span","5",None,None,None,None),
+	(2,2,10,"GtkGridLayoutChild","column","5",None,None,None,None),
+	(2,2,10,"GtkGridLayoutChild","column-span","2",None,None,None,None),
+	(2,2,10,"GtkGridLayoutChild","row","1",None,None,None,None),
+	(2,2,10,"GtkGridLayoutChild","row-span","5",None,None,None,None),
+	(2,2,15,"GtkGridLayoutChild","column","2",None,None,None,None),
+	(2,2,15,"GtkGridLayoutChild","column-span","3",None,None,None,None),
+	(2,2,15,"GtkGridLayoutChild","row","1",None,None,None,None),
+	(2,2,15,"GtkGridLayoutChild","row-span","5",None,None,None,None)
+  </object_layout_property>
 </cambalache-project>

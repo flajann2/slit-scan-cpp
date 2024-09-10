@@ -28,11 +28,18 @@
 	(4,1,"GtkFileChooserNative","file_gel_chooser",None,None,None,None,-1,None,None)
   </object>
   <object_property>
-	(2,1,"GtkWindow","default-height","400",None,None,None,None,None,None,None,None,None),
-	(2,1,"GtkWindow","default-width","600",None,None,None,None,None,None,None,None,None),
+	(2,1,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,1,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,1,"GtkWindow","default-height","500",None,None,None,None,None,None,None,None,None),
+	(2,1,"GtkWindow","default-width","800",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","title","Slit Scan",None,None,None,None,None,None,None,None,None),
+	(2,2,"GtkGrid","column-homogeneous","True",None,None,None,None,None,None,None,None,None),
 	(2,2,"GtkGrid","column-spacing","1",None,None,None,None,None,None,None,None,None),
 	(2,2,"GtkGrid","row-spacing","1",None,None,None,None,None,None,None,None,None),
+	(2,2,"GtkWidget","halign","baseline",None,None,None,None,None,None,None,None,None),
+	(2,2,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,2,"GtkWidget","valign","baseline-fill",None,None,None,None,None,None,None,None,None),
+	(2,2,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
 	(2,3,"GtkBox","spacing","1",None,None,None,None,None,None,None,None,None),
 	(2,4,"GtkButton","label","Load",None,None,None,None,None,None,None,None,None),
 	(2,5,"GtkButton","label","Save",None,None,None,None,None,None,None,None,None),

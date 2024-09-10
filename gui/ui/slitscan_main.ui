@@ -4,13 +4,20 @@
   <!-- interface-name slitscan_main.ui -->
   <requires lib="gtk" version="4.14"/>
   <object class="GtkWindow" id="ss_main_window">
-    <property name="default-height">400</property>
-    <property name="default-width">600</property>
+    <property name="default-height">500</property>
+    <property name="default-width">800</property>
+    <property name="hexpand">True</property>
     <property name="title">Slit Scan</property>
+    <property name="vexpand">True</property>
     <child>
       <object class="GtkGrid" id="ss_main_grid">
+        <property name="column-homogeneous">True</property>
         <property name="column-spacing">1</property>
+        <property name="halign">baseline</property>
+        <property name="hexpand">True</property>
         <property name="row-spacing">1</property>
+        <property name="valign">baseline-fill</property>
+        <property name="vexpand">True</property>
         <child>
           <object class="GtkBox" id="ss_main_proj_tools">
             <property name="spacing">1</property>

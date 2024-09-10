@@ -5,6 +5,8 @@
 #include <glibmm/main.h>
 
 #include <gtkmm/application.h>
+#include <gtkmm/builder.h>
+#include <gtkmm/button.h>
 #include <gtkmm/window.h>
 #include <gtkmm/drawingarea.h>
 #include <gdkmm/contentformats.h>

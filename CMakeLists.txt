@@ -7,10 +7,12 @@ set(CMAKE_CXX_COMPILER "clang++" CACHE STRING "C++ compiler" FORCE)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --export-dynamic")
+#set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --export-dynamic")
+
+set(CMAKE_C_COMPILER "clang" CACHE STRING "C compiler" FORCE)
 
 # Project name and version
-project(slit-scan  LANGUAGES CXX)
+project(slit-scan  LANGUAGES CXX C)
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})

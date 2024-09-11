@@ -2,6 +2,7 @@
 
 #include <main.h>
 #include <gui.h>
+#include <hekate/hekate>
 
 using namespace std;
 

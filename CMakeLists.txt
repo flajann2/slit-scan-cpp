@@ -7,12 +7,19 @@ set(CMAKE_CXX_COMPILER "clang++" CACHE STRING "C++ compiler" FORCE)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --export-dynamic")
-
 set(CMAKE_C_COMPILER "clang" CACHE STRING "C compiler" FORCE)
 
 # Project name and version
 project(slit-scan  LANGUAGES CXX C)
+
+include(FetchContent)
+FetchContent_Declare(
+   hekate
+   GIT_REPOSITORY https://github.com/flajann2/hekate.git
+   GIT_TAG master
+)
+FetchContent_MakeAvailable(hekate)
+include_directories(${hekate_SOURCE_DIR}/include)
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})

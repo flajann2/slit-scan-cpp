@@ -75,6 +75,8 @@
         </child>
         <child>
           <object class="GtkDrawingArea" id="ss_main_canvas">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <layout>
               <property name="column">2</property>
               <property name="column-span">3</property>

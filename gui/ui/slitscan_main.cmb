@@ -50,6 +50,8 @@
 	(2,10,"GtkOrientable","orientation","vertical",None,None,None,None,None,None,None,None,None),
 	(2,13,"GtkButton","label","Left Gel Load",None,None,None,None,None,None,None,None,None),
 	(2,14,"GtkButton","label","Right Gel Load",None,None,None,None,None,None,None,None,None),
+	(2,15,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(2,15,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkFileChooser","select-multiple","True",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkNativeDialog","modal","True",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkNativeDialog","title","Gel Chooser",None,None,None,None,None,None,None,None,None),

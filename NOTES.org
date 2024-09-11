@@ -3,6 +3,18 @@
   meaning anything to anyone but myself, nor being
   uptodate. Please see the README for the official
   documentation.
+
+** Reasons
+  For reasons, we have decided to implement Slit Scan
+  in C++, and give it a nice GUI to boot.
+
+  The GUI situation is wanting in Haskell, alas. I
+  began this same effort as a CLI app, but then many
+  would not have an easy go using it.
+
+  So this will use GTK4 and gtkmm and all the lastest
+  features of C++23.
+
 ** Math and logic transported from the Haskell version
    I still need to fix the math in the Haskell version,
    but I will do that in the C++ version instead. I think

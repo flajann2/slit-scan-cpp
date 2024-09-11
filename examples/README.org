@@ -1,0 +1,12 @@
+* Examples
+  The examples here are not really
+  example usage of SlitScan, but are
+  my explorations of the GUI, of the
+  SS Algorithm, of GTK4, video streaming, etc.
+
+  As such, all of these test programs were POC
+  for what makes up SlitScan. They are valuable 
+  for demonstrating how to perform various
+  operations without having the full application
+  up and going yet.
+

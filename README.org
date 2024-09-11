@@ -1,11 +1,27 @@
-* Slit Scan, C++ version
-  For reasons, we have decided to implement Slit Scan
-  in C++, and give it a nice GUI to boot.
-
-  The GUI situation is wanting in Haskell, alas. I
-  began this same effort as a CLI app, but then many
-  would not have an easy go using it.
-
-  So this will use GTK4 and gtkmm and all the lastest
-  features of C++23.
+* SlitScan -- Application to create Slit-Scans like in 2001: A Space Odyssey
+  SlitScan is a powerful application to allow you to create
+  slit-scans either from gels or your attached web camera. You
+  can also do it from videos.
+** Sources
+   + Gels
+     Gels are series of images similar to the approach Douglass Trumbel
+     used in 2001. 
+   + Videos
+     You can use any video whose format is recognized with similar effect.
+   + Webcams
+     This will allow you to create the slit-scan live.
+** Types of slit-scanning
+   + Slot
+     We initially support this. This implements the technique used in 2001.
+   + Time-shifting
+     Time-shifted video (or live) will be supported at a later date.
+** Credits, Copywrights, License
+   + MIT License
+   + Copywright 2024 Fred Mitchell
+   + Credit for the inspiration for this goes to Douglass Trumbel 
+     for his awesome special effects long before CGI.
+   + Credit goes to Authur C Clarke for the story, and to Stanly Kubrick for
+     making this story for the big silver screen as the first serious SF
+     film, which stands to this day.
+* Documentation
 

@@ -27,3 +27,5 @@ class Pane : public Gtk::DrawingArea {};
 
 #include <AppWindow.h>
 #include <menu.h>
+#include <WidgetNames.h>
+

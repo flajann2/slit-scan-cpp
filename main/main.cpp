@@ -2,11 +2,12 @@
 
 #include <main.h>
 #include <gui.h>
-#include <hekate/hekate>
+//#include <hekate/hekate>
 
 using namespace std;
 
+SlitScanApp SlitScanApp::ss_app;
+
 int main(int argc, char* argv[]) {
-  SlitScanApp app;
-  return app.run(argc, argv);
+  return SlitScanApp::ss_app.run(argc, argv);
 }

@@ -53,3 +53,8 @@
      I thought of doing all the slit computations up-front, but that
      would be memory inneficient. So I will work out how to
      do it properly.
+** Issues with the returned objects from Builder
+   Looks as though I need to do composition rather than
+   subclassing. For composition I can do several widgets
+   in a grouping class to handle all the logic. I need to
+   think about this.

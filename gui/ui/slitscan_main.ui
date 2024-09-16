@@ -7,6 +7,7 @@
     <property name="default-height">500</property>
     <property name="default-width">800</property>
     <property name="hexpand">True</property>
+    <property name="icon-name">applications-graphics</property>
     <property name="title">Slit Scan</property>
     <property name="vexpand">True</property>
     <child>
@@ -63,7 +64,9 @@
               </object>
             </child>
             <child>
-              <object class="GtkListBox" id="ss_main_gel_list_left"/>
+              <object class="GtkListBox" id="ss_main_gel_list_left">
+                <property name="selection-mode">multiple</property>
+              </object>
             </child>
             <layout>
               <property name="column">0</property>
@@ -94,7 +97,9 @@
               </object>
             </child>
             <child>
-              <object class="GtkListBox" id="ss_main_gel_list_right"/>
+              <object class="GtkListBox" id="ss_main_gel_list_right">
+                <property name="selection-mode">multiple</property>
+              </object>
             </child>
             <layout>
               <property name="column">5</property>

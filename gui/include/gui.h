@@ -19,13 +19,16 @@
 #include <iostream>
 
 namespace Gui {
-class Window : public Gtk::Window {};
-class Pane : public Gtk::DrawingArea {};
+  class Composition {};
+  class Window : public Gtk::Window {};
+  class Pane : public Gtk::DrawingArea {};
 }
 
 // in project reference must appear at the end
-
+#include <WidgetNames.h>
+#include <Application.h>
 #include <AppWindow.h>
 #include <menu.h>
-#include <WidgetNames.h>
+#include <GelSelection.h>
+
 

@@ -20,6 +20,8 @@ namespace Gui {
       // signal-slots configuation
       gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_left_gel));
       gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_right_gel));
+      gel_chooser->signal_response().connect(sigc::mem_fun(*this, &GelSlection::on_chooser_response));
+
       cout << "GelSelection wired up" << endl;
     }
 
@@ -30,8 +32,19 @@ namespace Gui {
       cout << "left gel clicked." << endl;
       gel_chooser->show();
     }
+    
     void on_right_gel() {
       cout << "right gel clicked." << endl;
+    }
+
+    void on_chooser_response(int r_id) {
+      if (r_id == GTK_RESPONSE_ACCEPT) {
+        // Get the selected folder path
+        auto filelist = gel_chooser->get_files2();
+        cout << "Selected files: " << endl;
+        for (auto file : filelist)
+          cout << file->get_basename() << endl;
+      }
     }
     
   private:

@@ -10,8 +10,5 @@
     <property name="modal">True</property>
     <property name="select-multiple">True</property>
     <property name="title">Gel Chooser</property>
-    <property name="transient-for">
-      <object class="GtkWindow"/>
-    </property>
   </object>
 </interface>

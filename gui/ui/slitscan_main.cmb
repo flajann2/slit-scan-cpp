@@ -25,8 +25,7 @@
 	(2,13,"GtkButton","ss_main_gel_get_left",9,None,None,None,None,None,None),
 	(2,14,"GtkButton","ss_main_gel_get_right",10,None,None,None,None,None,None),
 	(2,15,"GtkDrawingArea","ss_main_canvas",2,None,None,None,2,None,None),
-	(4,1,"GtkFileChooserNative","ss_file_gel_chooser",None,None,None,None,-1,None,None),
-	(4,2,"GtkWindow",None,1,None,None,None,-1,None,None)
+	(4,1,"GtkFileChooserNative","ss_file_gel_chooser",None,None,None,None,-1,None,None)
   </object>
   <object_property>
 	(2,1,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
@@ -60,8 +59,7 @@
 	(4,1,"GtkFileChooserNative","accept-label","Open",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkFileChooserNative","cancel-label","Cancel",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkNativeDialog","modal","True",None,None,None,None,None,None,None,None,None),
-	(4,1,"GtkNativeDialog","title","Gel Chooser",None,None,None,None,None,None,None,None,None),
-	(4,1,"GtkNativeDialog","transient-for",None,None,None,None,None,2,None,None,None,None)
+	(4,1,"GtkNativeDialog","title","Gel Chooser",None,None,None,None,None,None,None,None,None)
   </object_property>
   <object_layout_property>
 	(2,2,3,"GtkGridLayoutChild","column","0",None,None,None,None),

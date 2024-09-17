@@ -3,7 +3,6 @@
 #pragma once
 
 namespace Gui {
-using spBuilder = shared_ptr<Gtk::Builder>;
-  spBuilder obtain_builder();
+  std::shared_ptr<Gtk::Builder> obtain_builder();
 }
 

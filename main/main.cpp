@@ -6,12 +6,14 @@
 
 using namespace std;
 
+extern "C" GResource *gresource_get_resource (void);
+
 SSA SSA::ss_app;
 
 namespace Gui {
   GResource* resource = nullptr;
-  spBuilder app_builder;
-  spBuilder obtain_builder() {
+  shared_ptr<Gtk::Builder> app_builder;
+  shared_ptr<Gtk::Builder> obtain_builder() {
     if (!resource)
       resource = gresource_get_resource(); // this loads and "registers" the resouce by way of PFM!
 

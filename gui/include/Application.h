@@ -8,9 +8,6 @@ extern "C" GResource *gresource_get_resource (void);
 
 using namespace std;
 
-
-namespace Gui { class GelSlection; }
-
 class SlitScanApp : public Gtk::Application {
 public:
   SlitScanApp(std::string appname = "de.atomlogik.slit-scan")
@@ -18,7 +15,7 @@ public:
   }
 
   GResource& get_resource() { return *resource; }
-  spBuilder get_builder() { return main_builder; }
+  shared_ptr<Gtk::Builder> get_builder() { return main_builder; }
   static SlitScanApp& get_ss_app() { return ss_app; }
 
   friend int main(int argc, char* argv[]);
@@ -41,7 +38,7 @@ protected:
 
 private:
   GResource* resource;
-  spBuilder main_builder;
+  shared_ptr<Gtk::Builder> main_builder;
   shared_ptr<Gtk::Window> main_window;
 
   unique_ptr<Gui::GelSlection> gel_selection;

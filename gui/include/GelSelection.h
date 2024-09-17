@@ -1,7 +1,6 @@
 // GelSelection.h of SlitScan -- allow selection and management of gels
 // for slitscanning.
 #pragma once
-#include <Application.h>
 
 using namespace std;
 
@@ -9,7 +8,7 @@ namespace Gui {
   class GelSlection : public Gui::Composition {
   public:
     GelSlection() {
-      auto builder = SlitScanApp::get_ss_app().get_builder();
+      auto builder = obtain_builder();
 
       // acquire widget elements
       gel_left_button  = builder->get_object<Gtk::Button>(ss::main_gel_get_left);
@@ -22,7 +21,7 @@ namespace Gui {
       cout << "wired up" << endl;
     }
 
-    unique_ptr<GelSlection> create() { return make_unique<GelSlection>(); }
+    static unique_ptr<GelSlection> create() { return make_unique<GelSlection>(); }
 
   protected:
     void on_left_gel() {

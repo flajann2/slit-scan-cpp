@@ -25,10 +25,11 @@ namespace Gui {
 }
 
 // in project reference must appear at the end
+#include <Builder.h>
 #include <WidgetNames.h>
 #include <GelSelection.h>
-#include <Application.h>
 #include <AppWindow.h>
 #include <menu.h>
+#include <Application.h>
 
 

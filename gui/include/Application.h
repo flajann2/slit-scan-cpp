@@ -8,7 +8,8 @@ extern "C" GResource *gresource_get_resource (void);
 
 using namespace std;
 
-using spBuilder = shared_ptr<Gtk::Builder>;
+
+namespace Gui { class GelSlection; }
 
 class SlitScanApp : public Gtk::Application {
 public:
@@ -33,12 +34,18 @@ protected:
     main_window = main_builder->get_object<Gtk::Window>(ss::main_window); 
     main_window->show();
     add_window(*main_window);
+
+    // functionality
+    gel_selection = Gui::GelSlection::create();
   }
 
 private:
   GResource* resource;
   spBuilder main_builder;
   shared_ptr<Gtk::Window> main_window;
+
+  unique_ptr<Gui::GelSlection> gel_selection;
+
   static SlitScanApp ss_app;
 };
 

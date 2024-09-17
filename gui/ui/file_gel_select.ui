@@ -4,10 +4,14 @@
   <!-- interface-description File selector to load gels
  -->
   <requires lib="gtk" version="4.14"/>
-  <object class="GtkFileChooserNative" id="file_gel_chooser">
+  <object class="GtkFileChooserNative" id="ss_file_gel_chooser">
+    <property name="accept-label">Open</property>
+    <property name="cancel-label">Cancel</property>
     <property name="modal">True</property>
     <property name="select-multiple">True</property>
     <property name="title">Gel Chooser</property>
-    <property name="visible">True</property>
+    <property name="transient-for">
+      <object class="GtkWindow"/>
+    </property>
   </object>
 </interface>

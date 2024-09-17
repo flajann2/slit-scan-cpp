@@ -17,9 +17,10 @@ namespace Gui {
     if (!resource)
       resource = gresource_get_resource(); // this loads and "registers" the resouce by way of PFM!
 
-    if (!app_builder)
+    if (!app_builder) {
       app_builder = Gtk::Builder::create_from_resource(ss::resource + "slitscan_main.ui");
-
+      app_builder->add_from_resource(ss::resource + "file_gel_select.ui");
+    }
     return app_builder;
   }
   

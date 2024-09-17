@@ -14,8 +14,6 @@ public:
     : Gtk::Application(appname) {
   }
 
-  GResource& get_resource() { return *resource; }
-  shared_ptr<Gtk::Builder> get_builder() { return main_builder; }
   static SlitScanApp& get_ss_app() { return ss_app; }
 
   friend int main(int argc, char* argv[]);
@@ -26,8 +24,7 @@ protected:
   virtual void on_startup() override {
     Gtk::Application::on_startup();
     
-    resource = gresource_get_resource(); // this loads and "registers" the resouce by way of PFM!
-    main_builder = Gtk::Builder::create_from_resource(ss::resource + "slitscan_main.ui");
+    main_builder = Gui::obtain_builder();
     main_window = main_builder->get_object<Gtk::Window>(ss::main_window); 
     main_window->show();
     add_window(*main_window);
@@ -37,7 +34,6 @@ protected:
   }
 
 private:
-  GResource* resource;
   shared_ptr<Gtk::Builder> main_builder;
   shared_ptr<Gtk::Window> main_window;
 

@@ -18,7 +18,8 @@ namespace Gui {
 
       // signal-slots configuation
       gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_left_gel));
-      cout << "wired up" << endl;
+      gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_right_gel));
+      cout << "GelSelection wired up" << endl;
     }
 
     static unique_ptr<GelSlection> create() { return make_unique<GelSlection>(); }
@@ -26,6 +27,9 @@ namespace Gui {
   protected:
     void on_left_gel() {
       cout << "left gel clicked." << endl;
+    }
+    void on_right_gel() {
+      cout << "right gel clicked." << endl;
     }
     
   private:

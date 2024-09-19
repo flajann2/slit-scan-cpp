@@ -27,6 +27,7 @@ namespace Gui {
 // in project reference must appear at the end
 #include <Builder.h>
 #include <WidgetNames.h>
+#include <GelItem.h>
 #include <GelSelection.h>
 #include <AppWindow.h>
 #include <menu.h>

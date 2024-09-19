@@ -13,13 +13,13 @@ set(CMAKE_C_COMPILER "clang" CACHE STRING "C compiler" FORCE)
 project(slit-scan  LANGUAGES CXX C)
 
 include(FetchContent)
-FetchContent_Declare(
-   hekate
-   GIT_REPOSITORY https://github.com/flajann2/hekate.git
-   GIT_TAG master
-)
-FetchContent_MakeAvailable(hekate)
-include_directories(${hekate_SOURCE_DIR}/include)
+### FetchContent_Declare(
+###    hekate
+###    GIT_REPOSITORY https://github.com/flajann2/hekate.git
+###    GIT_TAG master
+### )
+### FetchContent_MakeAvailable(hekate)
+### include_directories(${hekate_SOURCE_DIR}/include)
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})

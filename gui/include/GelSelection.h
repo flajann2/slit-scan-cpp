@@ -31,6 +31,9 @@ namespace Gui {
     void on_left_gel() {
       cout << "left gel clicked." << endl;
       gel_chooser->show();
+      auto gi = GelItem::create_gel_item();
+      gel_left_listbox->append(*gi);
+      
     }
     
     void on_right_gel() {

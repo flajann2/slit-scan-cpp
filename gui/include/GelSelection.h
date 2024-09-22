@@ -22,7 +22,13 @@ namespace Gui {
       gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_right_gel));
       gel_chooser->signal_response().connect(sigc::mem_fun(*this, &GelSlection::on_chooser_response));
 
-      cout << "GelSelection wired up" << endl;
+      // Gel Chooser filters
+      filter = Gtk::FileFilter::create();
+      filter->add_mime_type("image/jpeg");
+      filter->add_mime_type("image/png");
+      filter->add_mime_type("image/gif");
+      filter->add_mime_type("image/webp");
+      gel_chooser->add_filter(filter);
     }
 
     static unique_ptr<GelSlection> create() { return make_unique<GelSlection>(); }
@@ -30,31 +36,52 @@ namespace Gui {
   protected:
     void on_left_gel() {
       cout << "left gel clicked." << endl;
+      current_place = GelAsset::Placement::left;
       gel_chooser->show();
-      auto gi = GelItem::create_gel_item();
-      gel_left_listbox->append(*gi);
-      
     }
     
     void on_right_gel() {
       cout << "right gel clicked." << endl;
+      current_place = GelAsset::Placement::right;
+      gel_chooser->show();
     }
 
     void on_chooser_response(int r_id) {
+      chosen_files.clear();
       if (r_id == GTK_RESPONSE_ACCEPT) {
         // Get the selected folder path
         auto filelist = gel_chooser->get_files2();
-        cout << "Selected files: " << endl;
-        for (auto file : filelist)
-          cout << file->get_basename() << endl;
+        for (auto file : filelist) {
+          auto ga = GelAsset::create_gel_asset(file->get_path(), current_place);
+
+          switch(current_place) {
+          case GelAsset::Placement::left:
+            gel_left_listbox->append(*ga);
+            break;
+
+          case GelAsset::Placement::right:
+            gel_right_listbox->append(*ga);
+            break;
+            
+          default:
+            break;
+          }
+          chosen_files.push_back(file->get_path());
+          assets.push_back(ga);
+        }        
       }
     }
     
   private:
+    GelAsset::Placement current_place; // what the user has chosen
     shared_ptr<Gtk::Button> gel_left_button;
     shared_ptr<Gtk::Button> gel_right_button;
     shared_ptr<Gtk::ListBox> gel_left_listbox;
     shared_ptr<Gtk::ListBox> gel_right_listbox;
+
+    Glib::RefPtr<Gtk::FileFilter> filter;
     shared_ptr<Gtk::FileChooserNative> gel_chooser;
-  };
+    list<string> chosen_files;
+    list<shared_ptr<Gui::GelAsset>> assets; // we filter on Placement
+ };
 }

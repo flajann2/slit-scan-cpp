@@ -58,3 +58,7 @@
    subclassing. For composition I can do several widgets
    in a grouping class to handle all the logic. I need to
    think about this.
+** GelItem rename to GelAsset
+   + Since there is a ListItem, which has nothing to do with GelItem,
+     I renamed it to GelAsset. Not perfect, but actually not far
+     off the mark, either.

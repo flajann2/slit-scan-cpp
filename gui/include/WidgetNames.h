@@ -10,6 +10,7 @@ namespace ss {
   const std::string main_gel_get_right = "ss_main_gel_get_right";
   const std::string main_gel_list_left = "ss_main_gel_list_left";
   const std::string main_gel_list_right = "ss_main_gel_list_right";
+  const std::string main_canvas = "ss_main_canvas";
 
   const std::string file_gel_chooser = "ss_file_gel_chooser";
 }

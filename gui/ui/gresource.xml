@@ -3,5 +3,6 @@
   <gresource prefix="/de/atomlogik/gui">
     <file preprocess="xml-stripblanks">slitscan_main.ui</file>
     <file preprocess="xml-stripblanks">file_gel_select.ui</file>
+    <file preprocess="xml-stripblanks">slitscan_main_settings.ui</file>
   </gresource>
 </gresources>

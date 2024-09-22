@@ -16,6 +16,7 @@ namespace Gui {
       gel_left_listbox  = builder->get_object<Gtk::ListBox>(ss::main_gel_list_left);
       gel_right_listbox = builder->get_object<Gtk::ListBox>(ss::main_gel_list_right);
       gel_chooser = builder->get_object<Gtk::FileChooserNative>(ss::file_gel_chooser);
+      canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
 
       // signal-slots configuation
       gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_left_gel));
@@ -78,6 +79,7 @@ namespace Gui {
     shared_ptr<Gtk::Button> gel_right_button;
     shared_ptr<Gtk::ListBox> gel_left_listbox;
     shared_ptr<Gtk::ListBox> gel_right_listbox;
+    shared_ptr<Gtk::DrawingArea> canvas;
 
     Glib::RefPtr<Gtk::FileFilter> filter;
     shared_ptr<Gtk::FileChooserNative> gel_chooser;

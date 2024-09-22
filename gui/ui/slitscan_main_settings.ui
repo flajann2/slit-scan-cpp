@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.4 -->
+<interface>
+  <!-- interface-description Main settings for slitscan -->
+  <requires lib="gtk" version="4.6"/>
+  <object class="GtkDialog" id="ss_main_settings">
+    <property name="default-height">500</property>
+    <property name="default-width">700</property>
+    <property name="title">SlitScan Settings</property>
+    <child>
+      <object class="GtkNotebook">
+        <property name="hexpand">True</property>
+        <property name="tab-pos">left</property>
+        <property name="vexpand">True</property>
+      </object>
+    </child>
+  </object>
+  <object class="GtkWindow" id="ss_main_settings_general">
+    <property name="title">General</property>
+  </object>
+  <object class="GtkWindow" id="ss_main_settings_video">
+    <property name="title">Video</property>
+  </object>
+</interface>

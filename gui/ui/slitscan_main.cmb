@@ -3,7 +3,8 @@
 <cambalache-project version="0.17.3" target_tk="gtk-4.0">
   <ui>
 	(2,None,"slitscan_main.ui","slitscan_main.ui",None,None,None,None,None,None,None),
-	(4,None,None,"file_gel_select.ui","File selector to load gels\n",None,None,None,None,None,None)
+	(4,None,None,"file_gel_select.ui","File selector to load gels\n",None,None,None,None,None,None),
+	(5,None,None,"slitscan_main_settings.ui","Main settings for slitscan",None,None,None,None,None,None)
   </ui>
   <ui_library>
 	(2,"gtk","4.14",None),
@@ -25,7 +26,11 @@
 	(2,13,"GtkButton","ss_main_gel_get_left",9,None,None,None,None,None,None),
 	(2,14,"GtkButton","ss_main_gel_get_right",10,None,None,None,None,None,None),
 	(2,15,"GtkDrawingArea","ss_main_canvas",2,None,None,None,2,None,None),
-	(4,1,"GtkFileChooserNative","ss_file_gel_chooser",None,None,None,None,-1,None,None)
+	(4,1,"GtkFileChooserNative","ss_file_gel_chooser",None,None,None,None,-1,None,None),
+	(5,1,"GtkDialog","ss_main_settings",None,None,None,None,-1,None,None),
+	(5,2,"GtkNotebook",None,1,None,None,None,-1,None,None),
+	(5,3,"GtkWindow","ss_main_settings_general",None,None,None,None,-1,None,None),
+	(5,4,"GtkWindow","ss_main_settings_video",None,None,None,None,-1,None,None)
   </object>
   <object_property>
 	(2,1,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
@@ -59,7 +64,15 @@
 	(4,1,"GtkFileChooserNative","accept-label","Open",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkFileChooserNative","cancel-label","Cancel",None,None,None,None,None,None,None,None,None),
 	(4,1,"GtkNativeDialog","modal","True",None,None,None,None,None,None,None,None,None),
-	(4,1,"GtkNativeDialog","title","Gel Chooser",None,None,None,None,None,None,None,None,None)
+	(4,1,"GtkNativeDialog","title","Gel Chooser",None,None,None,None,None,None,None,None,None),
+	(5,1,"GtkWindow","default-height","500",None,None,None,None,None,None,None,None,None),
+	(5,1,"GtkWindow","default-width","700",None,None,None,None,None,None,None,None,None),
+	(5,1,"GtkWindow","title","SlitScan Settings",None,None,None,None,None,None,None,None,None),
+	(5,2,"GtkNotebook","tab-pos","left",None,None,None,None,None,None,None,None,None),
+	(5,2,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(5,2,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
+	(5,3,"GtkWindow","title","General",None,None,None,None,None,None,None,None,None),
+	(5,4,"GtkWindow","title","Video",None,None,None,None,None,None,None,None,None)
   </object_property>
   <object_layout_property>
 	(2,2,3,"GtkGridLayoutChild","column","0",None,None,None,None),

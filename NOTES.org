@@ -62,3 +62,8 @@
    + Since there is a ListItem, which has nothing to do with GelItem,
      I renamed it to GelAsset. Not perfect, but actually not far
      off the mark, either.
+** Put image and video processing in its own thread
+   and pump signals to the gui thread for display.
+   If the gtkmm signal slot is thread safe, we'll use
+   it.
+

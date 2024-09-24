@@ -8,17 +8,17 @@
     <property name="default-width">700</property>
     <property name="title">SlitScan Settings</property>
     <child>
-      <object class="GtkNotebook">
+      <object class="GtkNotebook" id="ss_main_settings_note">
         <property name="hexpand">True</property>
         <property name="tab-pos">left</property>
         <property name="vexpand">True</property>
+        <child>
+          <object class="GtkGrid" id="ss_main_settings_note_general"/>
+        </child>
+        <child>
+          <object class="GtkGrid" id="ss_main_settings_note_video"/>
+        </child>
       </object>
     </child>
-  </object>
-  <object class="GtkWindow" id="ss_main_settings_general">
-    <property name="title">General</property>
-  </object>
-  <object class="GtkWindow" id="ss_main_settings_video">
-    <property name="title">Video</property>
   </object>
 </interface>

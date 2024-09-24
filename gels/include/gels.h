@@ -1,7 +1,16 @@
 // Gels
 #pragma once
 
+#include <iostream>
 #include <opencv2/opencv.hpp>
+#include <thread>
+#include <functional>
+#include <atomic>
+#include <chrono>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <optional>
 
 namespace Gel {
   class GelSource {
@@ -13,3 +22,5 @@ namespace Gel {
     }
   };
 }
+
+#include <GelQueue.h>

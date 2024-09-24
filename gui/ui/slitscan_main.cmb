@@ -4,7 +4,8 @@
   <ui>
 	(2,None,"slitscan_main.ui","slitscan_main.ui",None,None,None,None,None,None,None),
 	(4,None,None,"file_gel_select.ui","File selector to load gels\n",None,None,None,None,None,None),
-	(5,None,None,"slitscan_main_settings.ui","Main settings for slitscan",None,None,None,None,None,None)
+	(5,None,None,"slitscan_main_settings.ui","Main settings for slitscan",None,None,None,None,None,None),
+	(6,None,None,"gel_config.ui",None,None,None,None,None,None,None)
   </ui>
   <ui_library>
 	(2,"gtk","4.14",None),
@@ -28,14 +29,21 @@
 	(2,15,"GtkDrawingArea","ss_main_canvas",2,None,None,None,2,None,None),
 	(4,1,"GtkFileChooserNative","ss_file_gel_chooser",None,None,None,None,-1,None,None),
 	(5,1,"GtkDialog","ss_main_settings",None,None,None,None,-1,None,None),
-	(5,2,"GtkNotebook",None,1,None,None,None,-1,None,None),
-	(5,3,"GtkWindow","ss_main_settings_general",None,None,None,None,-1,None,None),
-	(5,4,"GtkWindow","ss_main_settings_video",None,None,None,None,-1,None,None)
+	(5,2,"GtkNotebook","ss_main_settings_note",1,None,None,None,-1,None,None),
+	(5,5,"GtkGrid","ss_main_settings_note_general",2,None,None,None,-1,None,None),
+	(5,6,"GtkGrid","ss_main_settings_note_video",2,None,None,None,-1,None,None),
+	(6,1,"GtkWindow","ss_gel_config",None,None,None,None,-1,None,None),
+	(6,2,"GtkNotebook","ss_gel_config_note",1,None,None,None,-1,None,None),
+	(6,3,"GtkGrid","ss_gel_config_gel_p1",2,None,None,None,-1,None,None),
+	(6,4,"GtkGrid","ss_gel_config_camera",2,None,None,None,-1,None,None),
+	(6,5,"GtkDrawingArea","ss_gel_config_gel_p1_image",3,None,None,None,None,None,None),
+	(6,6,"GtkButton","ss_gel_config_gel_p1_clock",3,None,None,None,None,None,None),
+	(6,7,"GtkButton","ss_gel_config_gel_p1_anticlock",3,None,None,None,6,None,None)
   </object>
   <object_property>
 	(2,1,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
-	(2,1,"GtkWindow","default-height","500",None,None,None,None,None,None,None,None,None),
+	(2,1,"GtkWindow","default-height","600",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","default-width","800",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","icon-name","applications-graphics",None,None,None,None,None,None,None,None,None),
 	(2,1,"GtkWindow","title","Slit Scan",None,None,None,None,None,None,None,None,None),
@@ -71,8 +79,13 @@
 	(5,2,"GtkNotebook","tab-pos","left",None,None,None,None,None,None,None,None,None),
 	(5,2,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(5,2,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
-	(5,3,"GtkWindow","title","General",None,None,None,None,None,None,None,None,None),
-	(5,4,"GtkWindow","title","Video",None,None,None,None,None,None,None,None,None)
+	(6,1,"GtkWindow","default-height","600",None,None,None,None,None,None,None,None,None),
+	(6,1,"GtkWindow","default-width","800",None,None,None,None,None,None,None,None,None),
+	(6,1,"GtkWindow","title","Gel Config",None,None,None,None,None,None,None,None,None),
+	(6,2,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(6,2,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
+	(6,6,"GtkButton","label","Clockwise",None,None,None,None,None,None,None,None,None),
+	(6,7,"GtkButton","label","Anticlockwise",None,None,None,None,None,None,None,None,None)
   </object_property>
   <object_layout_property>
 	(2,2,3,"GtkGridLayoutChild","column","0",None,None,None,None),
@@ -90,6 +103,17 @@
 	(2,2,15,"GtkGridLayoutChild","column","2",None,None,None,None),
 	(2,2,15,"GtkGridLayoutChild","column-span","3",None,None,None,None),
 	(2,2,15,"GtkGridLayoutChild","row","1",None,None,None,None),
-	(2,2,15,"GtkGridLayoutChild","row-span","5",None,None,None,None)
+	(2,2,15,"GtkGridLayoutChild","row-span","5",None,None,None,None),
+	(6,3,5,"GtkGridLayoutChild","column","0",None,None,None,None),
+	(6,3,5,"GtkGridLayoutChild","column-span","3",None,None,None,None),
+	(6,3,5,"GtkGridLayoutChild","row-span","3",None,None,None,None),
+	(6,3,6,"GtkGridLayoutChild","column","6",None,None,None,None),
+	(6,3,6,"GtkGridLayoutChild","column-span","1",None,None,None,None),
+	(6,3,6,"GtkGridLayoutChild","row","0",None,None,None,None),
+	(6,3,6,"GtkGridLayoutChild","row-span","1",None,None,None,None),
+	(6,3,7,"GtkGridLayoutChild","column","6",None,None,None,None),
+	(6,3,7,"GtkGridLayoutChild","column-span","1",None,None,None,None),
+	(6,3,7,"GtkGridLayoutChild","row","1",None,None,None,None),
+	(6,3,7,"GtkGridLayoutChild","row-span","1",None,None,None,None)
   </object_layout_property>
 </cambalache-project>

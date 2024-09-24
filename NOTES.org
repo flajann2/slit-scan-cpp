@@ -66,4 +66,12 @@
    and pump signals to the gui thread for display.
    If the gtkmm signal slot is thread safe, we'll use
    it.
+** Piplining
+   Not sure how this will work, but we have thread L producing scans
+   for the left side of the image, and thread R producing scans for the
+   R side of the image, and thread I to do the slit integration.
+** GelQueue -- limits on queue size, blocking the producers
+   In reality, we could have an issue with the queue growing too large and
+   exhausting memory. We should set an upper limit on queue size and 
+   do blocking for producers when that size is exceeded.
 

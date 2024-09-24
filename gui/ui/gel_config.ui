@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.4 -->
+<interface>
+  <requires lib="gtk" version="4.12"/>
+  <object class="GtkWindow" id="ss_gel_config">
+    <property name="default-height">600</property>
+    <property name="default-width">800</property>
+    <property name="title">Gel Config</property>
+    <child>
+      <object class="GtkNotebook" id="ss_gel_config_note">
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+        <child>
+          <object class="GtkGrid" id="ss_gel_config_gel_p1">
+            <child>
+              <object class="GtkDrawingArea" id="ss_gel_config_gel_p1_image">
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">3</property>
+                  <property name="row">0</property>
+                  <property name="row-span">3</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="ss_gel_config_gel_p1_clock">
+                <property name="label">Clockwise</property>
+                <layout>
+                  <property name="column">6</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="ss_gel_config_gel_p1_anticlock">
+                <property name="label">Anticlockwise</property>
+                <layout>
+                  <property name="column">6</property>
+                  <property name="column-span">1</property>
+                  <property name="row">1</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkGrid" id="ss_gel_config_camera"/>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

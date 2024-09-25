@@ -4,7 +4,7 @@
 using namespace std;
 
 const int tries = 100000;
-const int pause_mil = 2;
+const int pause_mil = 1;
 const int time_out = 4;
 
 Gel::GelQueue<int> gq;
@@ -12,6 +12,7 @@ Gel::GelQueue<int> gq;
 void t1() {
   for (int i = 0; !gq.is_stopped() && i < tries; ++i) {
     gq.enqueue(i);
+    cout << "t1(" << i << ")" << endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(pause_mil));
   }
 }
@@ -19,6 +20,7 @@ void t1() {
 void t2() {
   for (int i = 0; !gq.is_stopped() && i > -tries; --i) {
     gq.enqueue(i);
+    cout << "t2(" << i << ")" << endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(pause_mil));
   }
 }

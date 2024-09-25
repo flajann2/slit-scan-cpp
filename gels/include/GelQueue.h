@@ -5,12 +5,21 @@
 
 namespace Gel {
   template <typename T> class GelQueue {
+
+  protected:
+    inline bool _full() {
+      return queue.size() >= max_size;
+    }
+
   public:
     GelQueue(int max_size_ = 100) : max_size(max_size_)
                                   , stop(false) {}
     
+    // TODO: put in logic for upper limit. We baically block until
+    // TODO: the queue drops below the limit.
     void enqueue(T ob) {
       std::unique_lock<std::mutex> lock(mtx);
+      //cv.wait(lock, [&](){ return !_full(); });
       queue.push(ob);
       lock.unlock();
       cv.notify_one();
@@ -18,7 +27,7 @@ namespace Gel {
     
     std::optional<T> dequeue() {
       std::unique_lock<std::mutex> lock(mtx);
-      cv.wait(lock, [&](){ return is_stopped() || !queue.empty(); });
+      cv.wait(lock, [&](){ return is_stopped() && !queue.empty(); });
       if (is_stopped()) return {};
       
       auto ob = queue.front();
@@ -31,6 +40,11 @@ namespace Gel {
       return queue.empty();
     }
 
+    bool full() {
+      std::unique_lock<std::mutex> lock(mtx);
+      return _full();
+    }
+    
     void shutdown() {
       stop = true;
       cv.notify_all();

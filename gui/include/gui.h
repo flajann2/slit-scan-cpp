@@ -29,8 +29,8 @@ namespace Gui {
 #include <WidgetNames.h>
 #include <GelAsset.h>
 #include <GelSelection.h>
+#include <GelConfig.h>
 #include <AppWindow.h>
-#include <menu.h>
 #include <Application.h>
 
 

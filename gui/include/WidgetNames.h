@@ -13,4 +13,14 @@ namespace ss {
   const std::string main_canvas = "ss_main_canvas";
 
   const std::string file_gel_chooser = "ss_file_gel_chooser";
+
+  // configuration of individual gels
+  const std::string gel_config = "ss_gel_config";
+  const std::string gel_config_note = "ss_gel_config_note";
+  const std::string gel_config_p1_gel = "ss_gel_config_p1_gel";
+  const std::string gel_config_p2_camera = "ss_gel_config_p2_camera";
+  const std::string gel_config_gel_p1_clock = "ss_gel_config_gel_p1_clock";
+  const std::string gel_config_gel_p1_anticlock = "ss_gel_config_gel_p1_anticlock";
+
+
 }

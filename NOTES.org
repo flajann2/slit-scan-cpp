@@ -1,5 +1,5 @@
 * Notes -- personal and "private"
-  As usual, I make no promises about my notes being
+  As usual, I make no promises about my notes 
   meaning anything to anyone but myself, nor being
   uptodate. Please see the README for the official
   documentation.
@@ -53,6 +53,10 @@
      I thought of doing all the slit computations up-front, but that
      would be memory inneficient. So I will work out how to
      do it properly.
+   + I have a working example in SSTest.cpp.
+   + Pipelining of the scanning will be in threads,
+     using GelQueue designed specifically for this.
+
 ** Issues with the returned objects from Builder
    Looks as though I need to do composition rather than
    subclassing. For composition I can do several widgets
@@ -74,4 +78,18 @@
    In reality, we could have an issue with the queue growing too large and
    exhausting memory. We should set an upper limit on queue size and 
    do blocking for producers when that size is exceeded.
+   
+   Reworked it, in progress for the upper limit. I think we
+   will need a seperate mutex for that, and then we must
+   be wary of the deadly embrace. We will deal with this later, before
+   we release the product.
+
+** To Jupiter, and Beyond the Infinite
+   I think I will work on the Gel configuration Gui first, then
+   do the actual slit-scanning. The initial configuration will
+   simply rotate the gel 90 degrees or flip it. Later on,
+   I want to make it much more sophisticated.
+
+** My God, it's full of stars...
+   Today, we'd say it's full of galaxies. Or clusters. Or Cosmic webs...
 

@@ -34,8 +34,8 @@
 	(5,6,"GtkGrid","ss_main_settings_note_video",2,None,None,None,-1,None,None),
 	(6,1,"GtkWindow","ss_gel_config",None,None,None,None,-1,None,None),
 	(6,2,"GtkNotebook","ss_gel_config_note",1,None,None,None,-1,None,None),
-	(6,3,"GtkGrid","ss_gel_config_gel_p1",2,None,None,None,-1,None,None),
-	(6,4,"GtkGrid","ss_gel_config_camera",2,None,None,None,-1,None,None),
+	(6,3,"GtkGrid","ss_gel_config_p1_gel",2,None,None,None,-1,None,None),
+	(6,4,"GtkGrid","ss_gel_config_p2_camera",2,None,None,None,-1,None,None),
 	(6,5,"GtkDrawingArea","ss_gel_config_gel_p1_image",3,None,None,None,None,None,None),
 	(6,6,"GtkButton","ss_gel_config_gel_p1_clock",3,None,None,None,None,None,None),
 	(6,7,"GtkButton","ss_gel_config_gel_p1_anticlock",3,None,None,None,6,None,None)
@@ -84,6 +84,8 @@
 	(6,1,"GtkWindow","title","Gel Config",None,None,None,None,None,None,None,None,None),
 	(6,2,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(6,2,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
+	(6,3,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
+	(6,3,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
 	(6,6,"GtkButton","label","Clockwise",None,None,None,None,None,None,None,None,None),
 	(6,7,"GtkButton","label","Anticlockwise",None,None,None,None,None,None,None,None,None)
   </object_property>

@@ -11,7 +11,9 @@
         <property name="hexpand">True</property>
         <property name="vexpand">True</property>
         <child>
-          <object class="GtkGrid" id="ss_gel_config_gel_p1">
+          <object class="GtkGrid" id="ss_gel_config_p1_gel">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <child>
               <object class="GtkDrawingArea" id="ss_gel_config_gel_p1_image">
                 <layout>
@@ -47,7 +49,7 @@
           </object>
         </child>
         <child>
-          <object class="GtkGrid" id="ss_gel_config_camera"/>
+          <object class="GtkGrid" id="ss_gel_config_p2_camera"/>
         </child>
       </object>
     </child>

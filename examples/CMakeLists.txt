@@ -5,6 +5,7 @@ add_executable (CV2GTKVideoTest CV2GTKVideoTest.cpp)
 add_executable (SSTest SSTest.cpp)
 add_executable (UITest UITest.cpp)
 add_executable (JThread JThread.cpp)
+add_executable (YamlTest YamlTest.cpp)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtkmm-4.0 freetype2)
@@ -19,6 +20,7 @@ target_link_libraries(CV2GTKVideoTest PRIVATE ${COMMON_LIBS})
 target_link_libraries(SSTest          PRIVATE ${COMMON_LIBS})
 target_link_libraries(UITest          PRIVATE ${COMMON_LIBS})
 target_link_libraries(JThread         PRIVATE ${COMMON_LIBS})
+target_link_libraries(YamlTest        PRIVATE ${COMMON_LIBS} yaml-cpp::yaml-cpp)
 
 add_custom_command(
   OUTPUT uitest

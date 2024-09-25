@@ -84,6 +84,14 @@
    be wary of the deadly embrace. We will deal with this later, before
    we release the product.
 
+** Settings and configurations
+   + We have to decide how we make global setting visible to 
+     all components that need them, as well as specific configrations
+     for, say, individual gels. 
+   + For gels, we will always maintain the original unmodified
+     -- usually -- and just apply operations as per configuration.
+   + We need some sort of a time base for live mods.
+
 ** To Jupiter, and Beyond the Infinite
    I think I will work on the Gel configuration Gui first, then
    do the actual slit-scanning. The initial configuration will

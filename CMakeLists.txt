@@ -21,6 +21,9 @@ include(FetchContent)
 ### FetchContent_MakeAvailable(hekate)
 ### include_directories(${hekate_SOURCE_DIR}/include)
 
+find_package(yaml-cpp REQUIRED)
+include_directories(${YAML_CPP_INCLUDE_DIRS})
+
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 

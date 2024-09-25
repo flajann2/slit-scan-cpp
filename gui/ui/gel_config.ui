@@ -12,7 +12,9 @@
         <property name="vexpand">True</property>
         <child>
           <object class="GtkGrid" id="ss_gel_config_p1_gel">
+            <property name="column-spacing">2</property>
             <property name="hexpand">True</property>
+            <property name="row-spacing">2</property>
             <property name="vexpand">True</property>
             <child>
               <object class="GtkDrawingArea" id="ss_gel_config_gel_p1_image">

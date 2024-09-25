@@ -13,10 +13,10 @@
         <property name="tab-pos">left</property>
         <property name="vexpand">True</property>
         <child>
-          <object class="GtkGrid" id="ss_main_settings_note_general"/>
+          <object class="GtkGrid" id="ss_main_settings_note_p1_general"/>
         </child>
         <child>
-          <object class="GtkGrid" id="ss_main_settings_note_video"/>
+          <object class="GtkGrid" id="ss_main_settings_note_p2_video"/>
         </child>
       </object>
     </child>

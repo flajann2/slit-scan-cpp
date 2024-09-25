@@ -23,7 +23,8 @@ namespace Gui {
     }
     return app_builder;
   }
-  
+
+  MainSettings::Settings MainSettings::main_settings;
 }
 
 int main(int argc, char* argv[]) {

@@ -24,4 +24,6 @@ include_directories(${GTK4_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS})
 # Link against the GTK4 and Freetype libraries
 link_directories(${GTK4_LIBRARY_DIRS} ${FREETYPE_LIBRARY_DIRS})
 
-target_link_libraries(slitscan PRIVATE GuiLib)
+target_link_libraries(slitscan PRIVATE
+  GuiLib
+  yaml-cpp::yaml-cpp)

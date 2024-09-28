@@ -3,6 +3,8 @@
 #pragma once
 
 namespace Gui {
+  using namespace std;
+  
   class MainSettings : public Composition {
   public:
     struct Settings {
@@ -20,6 +22,8 @@ namespace Gui {
   public:
     //friend const MainSettings::Settings& obtain_main_settings(); 
     static Settings main_settings;
+
+    static unique_ptr<MainSettings> create() { return make_unique<MainSettings>(); }
   };
 
   const MainSettings::Settings& obtain_main_settings() {

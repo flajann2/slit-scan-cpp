@@ -6,8 +6,15 @@ namespace ss {
   const std::string resource = "/de/atomlogik/gui/";
   const std::string main_window = "ss_main_window";
 
-  const std::string main_gel_get_left = "ss_main_gel_get_left";
-  const std::string main_gel_get_right = "ss_main_gel_get_right";
+  // Gel Selection
+  const std::string b_main_load     = "ssb_main_load";
+  const std::string b_main_save     = "ssb_main_save";
+  const std::string b_main_save_as  = "ssb_main_save_as";
+  const std::string b_main_new      = "ssb_main_new";
+  const std::string b_main_settings = "ssb_main_settings";
+  
+  const std::string main_gel_get_left = "ssb_main_gel_get_left";
+  const std::string main_gel_get_right = "ssb_main_gel_get_right";
   const std::string main_gel_list_left = "ss_main_gel_list_left";
   const std::string main_gel_list_right = "ss_main_gel_list_right";
   const std::string main_canvas = "ss_main_canvas";

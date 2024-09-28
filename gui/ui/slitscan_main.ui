@@ -23,27 +23,27 @@
           <object class="GtkBox" id="ss_main_proj_tools">
             <property name="spacing">1</property>
             <child>
-              <object class="GtkButton" id="ss_main_load">
+              <object class="GtkButton" id="ssb_main_load">
                 <property name="label">Load</property>
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="ss_main_save">
+              <object class="GtkButton" id="ssb_main_save">
                 <property name="label">Save</property>
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="ss_main_save_as">
+              <object class="GtkButton" id="ssb_main_save_as">
                 <property name="label">Save as</property>
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="ss_main_new">
+              <object class="GtkButton" id="ssb_main_new">
                 <property name="label">New</property>
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="ss_main_settings">
+              <object class="GtkButton" id="ssb_main_settings">
                 <property name="label">Settings</property>
               </object>
             </child>
@@ -59,7 +59,7 @@
           <object class="GtkBox" id="ss_main_gel_left">
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkButton" id="ss_main_gel_get_left">
+              <object class="GtkButton" id="ssb_main_gel_get_left">
                 <property name="label">Left Gel Load</property>
               </object>
             </child>
@@ -92,7 +92,7 @@
           <object class="GtkBox" id="ss_main_gel_right">
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkButton" id="ss_main_gel_get_right">
+              <object class="GtkButton" id="ssb_main_gel_get_right">
                 <property name="label">Right Gel Load</property>
               </object>
             </child>

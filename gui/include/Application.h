@@ -4,8 +4,6 @@
 #include <giomm/resource.h>
 #include <gio/gio.h>
 
-extern "C" GResource *gresource_get_resource (void);
-
 using namespace std;
 
 class SlitScanApp : public Gtk::Application {

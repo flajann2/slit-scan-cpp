@@ -24,6 +24,8 @@ namespace Gui {
       gel_chooser = builder->get_object<Gtk::FileChooserNative>(ss::file_gel_chooser);
       canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
 
+      main_settings_dialog = MainSettings::create();
+
       // signal-slots configuation
       main_load_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_load));
       main_save_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_save));
@@ -65,6 +67,7 @@ namespace Gui {
 
     void on_settings() {
       cout << "Settings clicked." << endl;
+      main_settings_dialog->show();
     }
     
     void on_left_gel() {
@@ -108,6 +111,8 @@ namespace Gui {
   private:
     GelAsset::Placement current_place; // what the user has chosen
 
+    unique_ptr<Gui::MainSettings> main_settings_dialog;
+    
     shared_ptr<Gtk::Button> main_load_button;
     shared_ptr<Gtk::Button> main_save_button;
     shared_ptr<Gtk::Button> main_save_as_button;

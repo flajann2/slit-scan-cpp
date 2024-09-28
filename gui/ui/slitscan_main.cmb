@@ -9,7 +9,9 @@
   </ui>
   <ui_library>
 	(2,"gtk","4.14",None),
-	(4,"gtk","4.14",None)
+	(4,"gtk","4.14",None),
+	(5,"gtk","4.14",None),
+	(6,"gtk","4.14",None)
   </ui_library>
   <object>
 	(2,1,"GtkWindow","ss_main_window",None,None,None,None,-1,None,None),
@@ -55,6 +57,8 @@
 	(2,2,"GtkWidget","valign","baseline-fill",None,None,None,None,None,None,None,None,None),
 	(2,2,"GtkWidget","vexpand","True",None,None,None,None,None,None,None,None,None),
 	(2,3,"GtkBox","spacing","1",None,None,None,None,None,None,None,None,None),
+	(2,3,"GtkWidget","halign","baseline-center",None,None,None,None,None,None,None,None,None),
+	(2,3,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
 	(2,4,"GtkButton","label","Load",None,None,None,None,None,None,None,None,None),
 	(2,5,"GtkButton","label","Save",None,None,None,None,None,None,None,None,None),
 	(2,6,"GtkButton","label","Save as",None,None,None,None,None,None,None,None,None),

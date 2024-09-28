@@ -19,7 +19,9 @@ namespace Gui {
 
     if (!app_builder) {
       app_builder = Gtk::Builder::create_from_resource(ss::resource + "slitscan_main.ui");
+      app_builder->add_from_resource(ss::resource + "slitscan_main_settings.ui");
       app_builder->add_from_resource(ss::resource + "file_gel_select.ui");
+      app_builder->add_from_resource(ss::resource + "gel_config.ui");
     }
     return app_builder;
   }

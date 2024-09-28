@@ -12,7 +12,8 @@ namespace Gui {
     };
 
     MainSettings() {
-      main_settings = Settings(3, 0, 10.0);
+      main_settings = Settings(3, 0, 10.0); // TODO: semi-temporary. Load from yaml
+      auto builder = obtain_builder();
     }
     
   private:

@@ -5,9 +5,9 @@
 using namespace std;
 
 namespace Gui {
-  class GelSlection : public Gui::Composition {
+  class GelSelection : public Gui::Composition {
   public:
-    GelSlection() {
+    GelSelection() {
       auto builder = obtain_builder();
 
       // acquire widget elements
@@ -19,9 +19,9 @@ namespace Gui {
       canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
 
       // signal-slots configuation
-      gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_left_gel));
-      gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSlection::on_right_gel));
-      gel_chooser->signal_response().connect(sigc::mem_fun(*this, &GelSlection::on_chooser_response));
+      gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_left_gel));
+      gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_right_gel));
+      gel_chooser->signal_response().connect(sigc::mem_fun(*this, &GelSelection::on_chooser_response));
 
       // Gel Chooser filters
       filter = Gtk::FileFilter::create();
@@ -32,7 +32,7 @@ namespace Gui {
       gel_chooser->add_filter(filter);
     }
 
-    static unique_ptr<GelSlection> create() { return make_unique<GelSlection>(); }
+    static unique_ptr<GelSelection> create() { return make_unique<GelSelection>(); }
 
   protected:
     void on_left_gel() {

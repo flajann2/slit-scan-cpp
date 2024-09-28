@@ -30,14 +30,14 @@ protected:
     add_window(*main_window);
 
     // functionality
-    gel_selection = Gui::GelSlection::create();
+    gel_selection = Gui::GelSelection::create();
   }
 
 private:
   shared_ptr<Gtk::Builder> main_builder;
   shared_ptr<Gtk::Window> main_window;
 
-  unique_ptr<Gui::GelSlection> gel_selection;
+  unique_ptr<Gui::GelSelection> gel_selection;
 
   static SlitScanApp ss_app;
 };

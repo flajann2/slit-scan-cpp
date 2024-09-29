@@ -13,12 +13,123 @@
         <property name="tab-pos">left</property>
         <property name="vexpand">True</property>
         <child>
-          <object class="GtkGrid" id="ss_main_settings_note_p1_general"/>
+          <object class="GtkGrid" id="ss_main_settings_p1_general">
+            <property name="column-spacing">3</property>
+            <property name="row-spacing">3</property>
+            <child>
+              <object class="GtkLabel" id="ss_main_settings_note_p1_width_label">
+                <property name="label">Slit Width</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="ss_main_settings_p1_spacing">
+                <property name="label">Slit Spacing</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">1</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="ss_main_settings_p1_factor">
+                <property name="label">Perspective Factor</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">2</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="ss_main_settings_p1_width_e">
+                <property name="input-purpose">digits</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="ss_main_settings_p1_spacing_e">
+                <child>
+                  <object class="GtkEntryBuffer" id="ss_main_settings_p1_spacing_eb"/>
+                </child>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">1</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="ss_main_settings_p1_factor_e">
+                <child>
+                  <object class="GtkEntryBuffer" id="ss_main_settings_p1_factor_eb"/>
+                </child>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">2</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
         </child>
         <child>
-          <object class="GtkGrid" id="ss_main_settings_note_p2_video"/>
+          <object class="GtkGrid" id="ss_main_settings_note_p2_video">
+            <child>
+              <object class="GtkLabel">
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">1</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label">General</property>
+          </object>
+        </child>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label">Video</property>
+          </object>
         </child>
       </object>
     </child>
   </object>
+  <object class="GtkEntryBuffer" id="ss_main_settings_p1_width_eb"/>
 </interface>

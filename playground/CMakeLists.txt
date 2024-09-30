@@ -1,11 +1,11 @@
-### Examples
+### Playground POCs
 
-add_executable (VideoTest VideoTest.cpp)
+add_executable (VideoTest       VideoTest.cpp)
 add_executable (CV2GTKVideoTest CV2GTKVideoTest.cpp)
-add_executable (SSTest SSTest.cpp)
-add_executable (UITest UITest.cpp)
-add_executable (JThread JThread.cpp)
-add_executable (YamlTest YamlTest.cpp)
+add_executable (SSTest          SSTest.cpp)
+add_executable (UITest          UITest.cpp)
+add_executable (JThread         JThread.cpp)
+add_executable (YamlTest        YamlTest.cpp)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtkmm-4.0 freetype2)

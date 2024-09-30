@@ -1,5 +1,5 @@
-* Examples
-  The examples here are not really
+* Playground
+  The examples in the playground here are not really
   example usage of SlitScan, but are
   my explorations of the GUI, of the
   SS Algorithm, of GTK4, video streaming, etc.

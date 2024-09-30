@@ -43,9 +43,10 @@ add_library(GuiLib STATIC
 
 target_link_libraries(GuiLib PRIVATE ${COMMON_LIBS})
 
+set(CAMBALACHE "/var/lib/flatpak/exports/bin/ar.xjuan.Cambalache")
 add_custom_command(
   OUTPUT ${CMBO} ${CREC}
-  COMMAND cambalache -E ${CMB}
+  COMMAND ${CAMBALACHE} -E ${CMB}
   COMMAND glib-compile-resources ${CREX} --target=${CREC} --generate-source -C clang
   DEPENDS ${CMB} ${CREX}
   WORKING_DIRECTORY ${UI_SOURCE_DIR}

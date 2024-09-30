@@ -111,6 +111,21 @@
             </layout>
           </object>
         </child>
+        <child>
+          <object class="GtkBox">
+            <child>
+              <object class="GtkToggleButton" id="ss_main_toggle_play">
+                <property name="label">PLAY</property>
+              </object>
+            </child>
+            <layout>
+              <property name="column">2</property>
+              <property name="column-span">3</property>
+              <property name="row">6</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
       </object>
     </child>
   </object>

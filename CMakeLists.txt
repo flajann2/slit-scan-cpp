@@ -27,7 +27,7 @@ include_directories(${YAML_CPP_INCLUDE_DIRS})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-option(ENABLE_EXAMPLES "Enable examples" ON)
+option(ENABLE_PLAYGROUND "Enable playground" ON)
 option(ENABLE_TESTS "Enable testing" OFF)
 option(ENABLE_DOCS "Enable documentation" OFF)
 
@@ -54,8 +54,8 @@ if (ENABLE_DOCS)
   add_subdirectory(docs)
 endif()
 
-if (ENABLE_EXAMPLES)
-  add_subdirectory(examples)
+if (ENABLE_PLAYGROUND)
+  add_subdirectory(playground)
 endif()
 
 if (ENABLE_TESTS)

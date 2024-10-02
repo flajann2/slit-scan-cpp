@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- Created with Cambalache 0.90.4 -->
+<!-- Created with Cambalache 0.92.0 -->
 <interface>
   <requires lib="gtk" version="4.14"/>
   <requires lib="libadwaita" version="1.4"/>
@@ -53,6 +53,14 @@
         <child>
           <object class="GtkButton" id="main_tooling">
             <property name="label">Tooling</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="main_entry">
+            <property name="buffer">
+              <object class="GtkEntryBuffer" id="main_entry_buffer"/>
+            </property>
+            <property name="max-length">10</property>
           </object>
         </child>
       </object>

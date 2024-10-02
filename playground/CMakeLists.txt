@@ -23,7 +23,7 @@ target_link_libraries(JThread         PRIVATE ${COMMON_LIBS})
 target_link_libraries(YamlTest        PRIVATE ${COMMON_LIBS} yaml-cpp::yaml-cpp)
 
 add_custom_command(
-  OUTPUT uitest
+  OUTPUT uitest.ui
   COMMAND cambalache -E ./uitest.cmb
   DEPENDS uitest.cmb
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -43,5 +43,5 @@ pkg_check_modules(FREETYPE REQUIRED freetype2)
 include_directories(${GTK4_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS})
 link_directories(${GTK4_LIBRARY_DIRS} ${FREETYPE_LIBRARY_DIRS})
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/uitest
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/uitest.ui
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

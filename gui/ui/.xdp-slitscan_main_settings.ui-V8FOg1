@@ -56,9 +56,6 @@
             </child>
             <child>
               <object class="GtkEntry" id="ss_main_settings_p1_width_e">
-                <property name="buffer">
-                  <object class="GtkEntryBuffer"/>
-                </property>
                 <property name="focusable">True</property>
                 <property name="max-length">20</property>
                 <property name="max-width-chars">20</property>
@@ -85,9 +82,6 @@
             </child>
             <child>
               <object class="GtkEntry" id="ss_main_settings_p1_factor_e">
-                <property name="buffer">
-                  <object class="GtkEntryBuffer"/>
-                </property>
                 <layout>
                   <property name="column">1</property>
                   <property name="column-span">1</property>

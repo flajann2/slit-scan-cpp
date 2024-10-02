@@ -35,6 +35,7 @@ namespace Gui {
 // dependencies.
 #include <Builder.h>
 #include <WidgetNames.h>
+#include <EntryEditor.h>
 #include <MainSettings.h>
 #include <GelAsset.h>
 #include <GelSelection.h>

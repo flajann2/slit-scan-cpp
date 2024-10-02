@@ -26,12 +26,8 @@ namespace ss {
   const std::string main_settings_note            = "ss_main_settings_note";
   const std::string main_settings_note_p1_general = "ss_main_settings_note_p1_general";
   const std::string main_settings_p1_width_e      = "ss_main_settings_p1_width_e";
-  //const std::string main_settings_p1_width_eb     = "ss_main_settings_p1_width_eb";
   const std::string main_settings_p1_spacing_e    = "ss_main_settings_p1_spacing_e";
-  //const std::string main_settings_p1_spacing_eb   = "ss_main_settings_p1_spacing_eb";
   const std::string main_settings_p1_factor_e     = "ss_main_settings_p1_factor_e";
-  //const std::string main_settings_p1_factor_eb    = "ss_main_settings_p1_factor_eb";
-
 
   const std::string main_settings_note_p2_video   = "ss_main_settings_note_p2_video";
 

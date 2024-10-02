@@ -18,14 +18,19 @@ namespace Gui {
       auto builder = obtain_builder();
       main_settings_dialog = builder->get_object<Gtk::Dialog>(ss::main_settings);
 
+      // widgets
       main_width_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_width_e);
-      main_width_e->set_text("Hello Cruel World");
+      main_spacing_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_spacing_e);
+      main_factor_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_factor_e);
       
       main_width_e->signal_insert_text().connect(sigc::mem_fun(*this
                                                                , &MainSettings::on_insert_text)
                                                  , true);
+
+      // field mappings
       main_width_editor = make_unique<Gui::EntryEditor<int>>(main_settings.slit_width, main_width_e);
-      cout << "e: " << main_width_e << endl;
+      main_spacing_editor = make_unique<Gui::EntryEditor<int>>(main_settings.slit_spacing, main_spacing_e);
+      main_factor_editor = make_unique<Gui::EntryEditor<double>>(main_settings.perspective_factor, main_factor_e);
     }
     
 
@@ -52,6 +57,10 @@ namespace Gui {
   private:
     shared_ptr<Gtk::Entry> main_width_e;
     unique_ptr<Gui::EntryEditor<int>> main_width_editor;
+    shared_ptr<Gtk::Entry> main_spacing_e;
+    unique_ptr<Gui::EntryEditor<int>> main_spacing_editor;
+    shared_ptr<Gtk::Entry> main_factor_e;
+    unique_ptr<Gui::EntryEditor<double>> main_factor_editor;
     
   public:
     //friend const MainSettings::Settings& obtain_main_settings(); 

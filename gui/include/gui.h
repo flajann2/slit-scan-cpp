@@ -22,6 +22,12 @@
 #include <thread>
 #include <iostream>
 
+#include <format>
+#include <string>
+#include <string_view>
+#include <charconv>
+#include <stdexcept>
+
 namespace Gui {
   class Composition {};
   class Window : public Gtk::Window {};

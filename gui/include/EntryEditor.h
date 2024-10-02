@@ -4,12 +4,19 @@
 
 namespace Gui {
   using namespace std;
-  
+
+  /// // Specialization for string to avoid unnecessary conversion
+  /// template<>
+  /// std::string from_string(const std::string_view& str) {
+  ///   return std::string(str);
+  /// } 
+
   template<typename T>
   class EntryEditor : public Composition {
   public:
-    EntryEditor(T& field, shared_ptr<Gtk::Entry> entry_) : entry(entry_)
-                                                         , entry_buffer(entry_->get_buffer()) {
+    EntryEditor(T& field_, shared_ptr<Gtk::Entry> entry_) : field(field_)
+                                                          , entry(entry_)
+                                                          , entry_buffer(entry_->get_buffer()) {
       cout << "field: " << field << endl;
 
       // set up the buffer
@@ -22,8 +29,23 @@ namespace Gui {
     }
 
   protected:
+    T from_string(const std::string_view& str) {
+      T result;
+      auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+      if (ec != std::errc{}) {
+        throw std::runtime_error("Conversion failed");
+      }
+      return result;
+    }
+    
     void on_change() {
-      cout << "on_change() -> " << entry->get_text()  << endl;
+      try {
+        field = from_string(entry->get_text().c_str());
+      } catch (const exception& e) {
+        cout << "<<conversion error>>" << endl << e.what() << endl;
+        entry_buffer->set_text(format("{}", field));
+      }
+      cout << "on_change() -> " << field << endl;
     }
     
     void on_inserted(guint position, const char* chars, guint n_chars) {
@@ -42,5 +64,6 @@ namespace Gui {
   private:
     shared_ptr<Gtk::Entry> entry;
     shared_ptr<Gtk::EntryBuffer> entry_buffer;
+    T& field;
   };
 }

@@ -88,6 +88,8 @@
    + We have to decide how we make global setting visible to 
      all components that need them, as well as specific configrations
      for, say, individual gels. 
+     + We have an EntryEditor class that will work
+       on this.
    + For gels, we will always maintain the original unmodified
      -- usually -- and just apply operations as per configuration.
    + We need some sort of a time base for live mods.

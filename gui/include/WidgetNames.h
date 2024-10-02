@@ -38,6 +38,4 @@ namespace ss {
   const std::string gel_config_p2_camera = "ss_gel_config_p2_camera";
   const std::string gel_config_gel_p1_clock = "ss_gel_config_gel_p1_clock";
   const std::string gel_config_gel_p1_anticlock = "ss_gel_config_gel_p1_anticlock";
-
-
 }

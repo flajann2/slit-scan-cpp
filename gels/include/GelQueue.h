@@ -2,7 +2,6 @@
 // for gel processing
 #pragma once
 
-
 namespace Gel {
   template <typename T> class GelQueue {
 

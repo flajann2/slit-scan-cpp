@@ -85,9 +85,6 @@
             </child>
             <child>
               <object class="GtkEntry" id="ss_main_settings_p1_factor_e">
-                <property name="buffer">
-                  <object class="GtkEntryBuffer"/>
-                </property>
                 <layout>
                   <property name="column">1</property>
                   <property name="column-span">1</property>

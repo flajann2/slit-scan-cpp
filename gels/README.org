@@ -1,4 +1,7 @@
 * Gels -- Sources for SlitScan
   Here we provide sources for the gels, video, or live streams
   for SlitScan.
-
+** Basic Design
+   We have a thread that generates the image stream,
+   and feed that into the consumer, which will render
+   it to the 

@@ -5,12 +5,6 @@
 namespace Gui {
   using namespace std;
 
-  /// // Specialization for string to avoid unnecessary conversion
-  /// template<>
-  /// std::string from_string(const std::string_view& str) {
-  ///   return std::string(str);
-  /// } 
-
   template<typename T>
   class EntryEditor : public Composition {
   public:
@@ -42,7 +36,10 @@ namespace Gui {
       try {
         field = from_string(entry->get_text().c_str());
       } catch (const exception& e) {
-        cout << "<<conversion error>>" << endl << e.what() << endl;
+        cout << e.what() << endl;
+        // TODO: this simply reverts the field
+        // TODO: back to the original value. We
+        // TODO: do a better job of handling this.
         entry_buffer->set_text(format("{}", field));
       }
       cout << "on_change() -> " << field << endl;

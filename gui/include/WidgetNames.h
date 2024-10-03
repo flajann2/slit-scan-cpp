@@ -31,11 +31,16 @@ namespace ss {
 
   const std::string main_settings_note_p2_video   = "ss_main_settings_note_p2_video";
 
-  // configuration of individual gels
-  const std::string gel_config = "ss_gel_config";
-  const std::string gel_config_note = "ss_gel_config_note";
-  const std::string gel_config_p1_gel = "ss_gel_config_p1_gel";
-  const std::string gel_config_p2_camera = "ss_gel_config_p2_camera";
-  const std::string gel_config_gel_p1_clock = "ss_gel_config_gel_p1_clock";
-  const std::string gel_config_gel_p1_anticlock = "ss_gel_config_gel_p1_anticlock";
+  // configuration of individual gels -- images, camera, video
+  const std::string gel_config           = "ss_gel_config";
+  const std::string gel_config_note      = "ss_gel_config_note";
+  const std::string gel_config_note_p1   = "ss_gel_config_note_p1";
+  const std::string gel_config_p1_canvas = "ss_gel_config_p1_canvas";
+  const std::string gel_config_p1_rotate = "ss_gel_config_p1_rotate";
+  const std::string gel_config_p1_rate   = "ss_gel_config_p1_rate";
+  const std::string gel_config_p1_flip   = "ss_gel_config_p1_flip";
+  const std::string gel_config_note_p2   = "ss_gel_config_note_p2";
+  const std::string gel_config_p2_canvas = "ss_gel_config_p2_canvas";
+  const std::string gel_config_note_p3   = "ss_gel_config_note_p3";
+  const std::string gel_config_p3_canvas = "ss_gel_config_p3_canvas";
 }

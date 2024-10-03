@@ -22,6 +22,7 @@ namespace Gui {
       , right
       , top // TODO do we wish to use this?
       , bottom // same question?
+      , circular
     };
     
     GelAsset(Placement place_ = Placement::undefined) : place(place_) {}
@@ -54,8 +55,15 @@ namespace Gui {
       thumbnail.set_pixel_size(50);
       thumbnail.set(pixbuf);      
       prepend(thumbnail);
-      append(configuation);
+      append(configuration);
+
+      configuration.signal_clicked().connect(sigc::mem_fun(*this, &GelAsset::on_config_clicked));
+      
       show();
+    }
+
+    void on_config_clicked() {
+      cout << "Config clicked." << endl;
     }
     
   private:
@@ -63,7 +71,7 @@ namespace Gui {
     
     Gtk::Image thumbnail;
     cv::Mat mthumb;
-    Gtk::Button configuation;
+    Gtk::Button configuration;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
     cv::Mat gel; // source image. All will be derived from this.
     std::string pathname;

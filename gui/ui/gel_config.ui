@@ -30,32 +30,6 @@
               </object>
             </child>
             <child>
-              <object class="GtkSpinButton" id="ss_gel_config_p1_rotate">
-                <layout>
-                  <property name="column">5</property>
-                  <property name="row">0</property>
-                </layout>
-              </object>
-            </child>
-            <child>
-              <object class="GtkComboBox" id="ss_gel_config_p1_rot">
-                <layout>
-                  <property name="column">5</property>
-                  <property name="row">1</property>
-                </layout>
-              </object>
-            </child>
-            <child>
-              <object class="GtkComboBox" id="ss_gel_config_p1_rot">
-                <layout>
-                  <property name="column">5</property>
-                  <property name="column-span">1</property>
-                  <property name="row">1</property>
-                  <property name="row-span">1</property>
-                </layout>
-              </object>
-            </child>
-            <child>
               <object class="GtkScale" id="ss_gel_config_p1_rate">
                 <property name="adjustment">
                   <object class="GtkAdjustment" id="ss_gel_config_p1_rate_adj">
@@ -70,7 +44,7 @@
                 <layout>
                   <property name="column">5</property>
                   <property name="column-span">1</property>
-                  <property name="row">2</property>
+                  <property name="row">1</property>
                   <property name="row-span">1</property>
                 </layout>
               </object>
@@ -86,20 +60,11 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Hmmm</property>
-                <layout>
-                  <property name="column">4</property>
-                  <property name="row">1</property>
-                </layout>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel">
                 <property name="label">Rate</property>
                 <layout>
                   <property name="column">4</property>
                   <property name="column-span">1</property>
-                  <property name="row">2</property>
+                  <property name="row">1</property>
                   <property name="row-span">1</property>
                 </layout>
               </object>
@@ -110,7 +75,43 @@
                 <layout>
                   <property name="column">4</property>
                   <property name="column-span">1</property>
-                  <property name="row">3</property>
+                  <property name="row">2</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScale" id="ss_gel_config_p1_rotate">
+                <property name="adjustment">
+                  <object class="GtkAdjustment" id="ss_gel_config_p1_rotate_adj">
+                    <property name="step-increment">10.0</property>
+                    <property name="upper">100.0</property>
+                    <property name="value">50.0</property>
+                  </object>
+                </property>
+                <property name="fill-level">100.0</property>
+                <property name="hexpand">True</property>
+                <property name="show-fill-level">True</property>
+                <layout>
+                  <property name="column">5</property>
+                  <property name="row">0</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSwitch">
+                <layout>
+                  <property name="column">5</property>
+                  <property name="row">2</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSwitch" id="ss_gel_config_p1_flip">
+                <layout>
+                  <property name="column">5</property>
+                  <property name="column-span">1</property>
+                  <property name="row">2</property>
                   <property name="row-span">1</property>
                 </layout>
               </object>
@@ -119,15 +120,49 @@
         </child>
         <child type="tab">
           <object class="GtkLabel">
-            <property name="label">General</property>
+            <property name="label">Image</property>
           </object>
         </child>
         <child>
-          <object class="GtkGrid" id="ss_gel_config_note_p2"/>
+          <object class="GtkGrid" id="ss_gel_config_note_p2">
+            <child>
+              <object class="GtkDrawingArea" id="ss_gel_config_p2_canvas">
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">4</property>
+                  <property name="row">0</property>
+                  <property name="row-span">4</property>
+                </layout>
+              </object>
+            </child>
+          </object>
         </child>
         <child type="tab">
           <object class="GtkLabel">
-            <property name="label">Animation</property>
+            <property name="label">Camera</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkGrid" id="ss_gel_config_note_p3">
+            <child>
+              <object class="GtkDrawingArea" id="ss_gel_config_p3_canvas">
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">4</property>
+                  <property name="row">0</property>
+                  <property name="row-span">4</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label">Video</property>
           </object>
         </child>
       </object>

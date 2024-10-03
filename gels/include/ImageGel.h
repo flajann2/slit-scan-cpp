@@ -23,8 +23,8 @@ namespace Gel {
       time_stamp load_time; // supposed to be a unique identifier. 
       
       ScanMeth meth;
-      double sing_rot; // single rotation
-      double rot_rate; // rotations per second      
+      double stationary_rotation;
+      double rotation_rate; // rotations per second      
     };
 
     

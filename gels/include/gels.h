@@ -75,3 +75,5 @@ namespace Gel {
 
 #include <GelQueue.h>
 #include <ImageGel.h>
+#include <VideoGel.h>
+#include <CameraGel.h>

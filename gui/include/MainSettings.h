@@ -32,7 +32,6 @@ namespace Gui {
       main_spacing_editor = make_unique<Gui::EntryEditor<int>>(main_settings.slit_spacing, main_spacing_e);
       main_factor_editor = make_unique<Gui::EntryEditor<double>>(main_settings.perspective_factor, main_factor_e);
     }
-    
 
   protected:
     shared_ptr<Gtk::Dialog> main_settings_dialog;

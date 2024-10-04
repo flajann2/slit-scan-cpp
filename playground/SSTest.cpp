@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
   const Mat ss_perspective = cv::getPerspectiveTransform(srcPoints, dstPoints);
   cout << "ss_perspective " << ss_perspective << endl;
   cout << endl;
-  
 
   const string window_name = "Slit Scan 3rd Demo";
   namedWindow(window_name);

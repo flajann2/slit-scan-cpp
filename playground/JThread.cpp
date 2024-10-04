@@ -1,5 +1,22 @@
-#include <gels.h>
+// TODO: All of these includes are
+// TODO: not needed. Cull.
+
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include <sigc++/sigc++.h>
+#include <thread>
+#include <functional>
+#include <generator>
+#include <atomic>
 #include <chrono>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <optional>
+
+// to avoid conflit with the applican class, we pull this in
+// sepreatly.
+#include <GelQueue.h>
 
 using namespace std;
 

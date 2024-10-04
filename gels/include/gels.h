@@ -13,9 +13,11 @@
 #include <mutex>
 #include <condition_variable>
 #include <optional>
+#include <tuple>
 
 namespace Gel {
-
+  using namespace std;
+  
   using time_basis =std::chrono::system_clock; // TODO: make this steady_clock 
   using time_stamp =std::chrono::time_point<time_basis>;
   using micros = std::chrono::microseconds;
@@ -47,8 +49,9 @@ namespace Gel {
       }
     }
 
-
-    static unique_ptr<GelSource> create() {}
+    // T Must be a derivate of GelSource
+    template <typename T>
+    static unique_ptr<GelSource> create() { return make_unique<T>(); }
     
   protected:
     virtual void broadcast_next_frame(cv::Mat frame, int timestamp) {
@@ -77,6 +80,7 @@ namespace Gel {
 }
 
 #include <GelQueue.h>
-#include <ImageGel.h>
-#include <VideoGel.h>
-#include <CameraGel.h>
+#include <Frame2Canvas.h>
+#include <ImageGelSource.h>
+#include <VideoGelSource.h>
+#include <CameraGelSource.h>

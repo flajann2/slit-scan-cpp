@@ -1,4 +1,4 @@
-// ImageGel.h -- GelSource for images
+// ImageGelSource.h -- GelSource for images
 #pragma once
 
 #include <ctime>
@@ -9,9 +9,9 @@ namespace Gel {
   
   const auto default_frame_rate = micros(1000000/30); 
   
-  class ImageGel : public GelSource {
+  class ImageGelSource : public GelSource {
   public:
-    ImageGel(micros interval = default_frame_rate)
+    ImageGelSource(micros interval = default_frame_rate)
       : GelSource(interval, [&](time_stamp ts) { next_frame(ts); }) {
       start(); // TODO:: dont start here     
     }

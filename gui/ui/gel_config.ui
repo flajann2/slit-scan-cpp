@@ -1,24 +1,25 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- Created with Cambalache 0.92.0 -->
 <interface>
+  <!-- interface-description Configuration of individual gels. -->
   <requires lib="gtk" version="4.14"/>
-  <object class="GtkWindow" id="ss_gel_config">
+  <object class="GtkDialog" id="ss_gel_config">
     <property name="default-height">600</property>
     <property name="default-width">800</property>
     <property name="title">Gel Config</property>
     <child>
-      <object class="GtkNotebook" id="ss_gel_config_note">
+      <object class="GtkNotebook" id="ss_gel_config_note_2">
         <property name="group-name">ss_gel_config_note</property>
         <property name="hexpand">True</property>
         <property name="page">3</property>
         <property name="tab-pos">left</property>
         <property name="vexpand">True</property>
         <child>
-          <object class="GtkGrid" id="ss_gel_config_note_p1">
+          <object class="GtkGrid" id="ss_gel_config_note_p1_2">
             <property name="column-spacing">2</property>
             <property name="row-spacing">2</property>
             <child>
-              <object class="GtkDrawingArea" id="ss_gel_config_p1_canvas">
+              <object class="GtkDrawingArea" id="ss_gel_config_p1_canvas_2">
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <layout>
@@ -30,7 +31,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkScale" id="ss_gel_config_p1_rate">
+              <object class="GtkScale" id="ss_gel_config_p1_rate_2">
                 <property name="adjustment">
                   <object class="GtkAdjustment" id="ss_gel_config_p1_rate_adj">
                     <property name="step-increment">10.0</property>
@@ -81,7 +82,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkScale" id="ss_gel_config_p1_rotate">
+              <object class="GtkScale" id="ss_gel_config_p1_rotate_2">
                 <property name="adjustment">
                   <object class="GtkAdjustment" id="ss_gel_config_p1_rotate_adj">
                     <property name="step-increment">10.0</property>
@@ -107,7 +108,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkSwitch" id="ss_gel_config_p1_flip">
+              <object class="GtkSwitch" id="ss_gel_config_p1_flip_2">
                 <layout>
                   <property name="column">5</property>
                   <property name="column-span">1</property>
@@ -124,9 +125,9 @@
           </object>
         </child>
         <child>
-          <object class="GtkGrid" id="ss_gel_config_note_p2">
+          <object class="GtkGrid" id="ss_gel_config_note_p2_2">
             <child>
-              <object class="GtkDrawingArea" id="ss_gel_config_p2_canvas">
+              <object class="GtkDrawingArea" id="ss_gel_config_p2_canvas_2">
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <layout>
@@ -145,9 +146,9 @@
           </object>
         </child>
         <child>
-          <object class="GtkGrid" id="ss_gel_config_note_p3">
+          <object class="GtkGrid" id="ss_gel_config_note_p3_2">
             <child>
-              <object class="GtkDrawingArea" id="ss_gel_config_p3_canvas">
+              <object class="GtkDrawingArea" id="ss_gel_config_p3_canvas_2">
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <layout>

@@ -46,6 +46,9 @@ namespace Gel {
         timerThread.join();
       }
     }
+
+
+    static unique_ptr<GelSource> create() {}
     
   protected:
     virtual void broadcast_next_frame(cv::Mat frame, int timestamp) {

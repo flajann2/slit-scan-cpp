@@ -32,8 +32,6 @@ namespace Gel {
     void next_frame(time_stamp ts) {
       cout << "next_frame() " << ts << endl;
     }
-
-    vector<OneGel> gels; // list is regenerated on the basis of user input;    
     
   private:
   };

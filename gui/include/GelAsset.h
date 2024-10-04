@@ -3,6 +3,7 @@
 //                           be made per instruction.
 #pragma once
 
+#include <gels.h>
 using namespace std;
 
 const int thumb_width = 400;
@@ -63,12 +64,13 @@ namespace Gui {
     }
 
     void on_config_clicked() {
-      cout << "Config clicked." << endl;
+      cout << "Config clicked. file " << pathname << endl;
     }
     
   private:
     Placement place;
     
+    unique_ptr<Gel::GelSource> gel_source;
     Gtk::Image thumbnail;
     cv::Mat mthumb;
     Gtk::Button configuration;

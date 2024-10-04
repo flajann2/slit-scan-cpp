@@ -5,3 +5,25 @@
    We have a thread that generates the image stream,
    and feed that into the consumer, which will render
    it to the 
+
+   + I will have a single ImageGel per image. Indeed, a single GelSource
+     per resource. The reason is that I can mix and match sources.
+     Image gels with video gels, even camera gels. This is 
+     complexifying the design, but I want to blow After Effects
+     clean out of the water.
+   + Gel sources do not do any slit processing. They do image processing with
+     the frames, and pass those frames to the gel sinks, which will do
+     the actual slit processing. Gel sinks know nothing about where
+     the frames are coming from. 
+   + It just occured to me that for the images, I may have to 
+     delay sending a new frame for a while. This would not be the
+     case with video -- or would it? We could have
+     the gel sources slide the image along? But I still see that as
+     something the sinks should be doing.
+   + Gel Source frame processing and broadcasting will be
+     based on time, not ticks. This way, if we wish to jump from 15 
+     frames per second to 60, the expected result will occur
+     as in the smoothing of the frame actions, not speeding them
+     up. 
+
+

@@ -11,7 +11,7 @@ const int thumb_height = 300;
 
 namespace Gui {
   
-  // This shall display a thumbnail and a dropdown for configuration.
+  // This shall display a thumbnail and a dialog for configuration.
   // For instance, rotations, mirroring, or transformations during
   // the gel scan, etc.
   class GelAsset : public Gtk::Box {
@@ -58,6 +58,7 @@ namespace Gui {
       prepend(thumbnail);
       append(configuration);
 
+      gel_config = GelConfig::create(gel);
       configuration.signal_clicked().connect(sigc::mem_fun(*this, &GelAsset::on_config_clicked));
       
       show();
@@ -65,16 +66,20 @@ namespace Gui {
 
     void on_config_clicked() {
       cout << "Config clicked. file " << pathname << endl;
+      gel_config->show();
     }
     
   private:
     Placement place;
     
     unique_ptr<Gel::GelSource> gel_source;
+    unique_ptr<Gui::GelConfig> gel_config;
+
     Gtk::Image thumbnail;
     cv::Mat mthumb;
     Gtk::Button configuration;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
+
     cv::Mat gel; // source image. All will be derived from this.
     std::string pathname;
   };

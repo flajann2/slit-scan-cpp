@@ -43,8 +43,8 @@ namespace Gui {
 #include <WidgetNames.h>
 #include <EntryEditor.h>
 #include <MainSettings.h>
+#include <GelConfig.h>
 #include <GelAsset.h>
 #include <GelSelection.h>
-#include <GelConfig.h>
 #include <AppWindow.h>
 #include <Application.h>

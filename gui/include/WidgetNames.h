@@ -21,7 +21,7 @@ namespace ss {
 
   const std::string file_gel_chooser = "ss_file_gel_chooser";
 
-  // global settings
+  // dialog global settings
   const std::string main_settings                 = "ss_main_settings";
   const std::string main_settings_note            = "ss_main_settings_note";
   const std::string main_settings_note_p1_general = "ss_main_settings_note_p1_general";
@@ -31,7 +31,7 @@ namespace ss {
 
   const std::string main_settings_note_p2_video   = "ss_main_settings_note_p2_video";
 
-  // configuration of individual gels -- images, camera, video
+  // dialog configuration of individual gels -- images, camera, video
   const std::string gel_config           = "ss_gel_config";
   const std::string gel_config_note      = "ss_gel_config_note";
   const std::string gel_config_note_p1   = "ss_gel_config_note_p1";

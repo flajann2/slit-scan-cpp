@@ -108,14 +108,6 @@
               </object>
             </child>
             <child>
-              <object class="GtkSwitch">
-                <layout>
-                  <property name="column">5</property>
-                  <property name="row">2</property>
-                </layout>
-              </object>
-            </child>
-            <child>
               <object class="GtkSwitch" id="ss_gel_config_p1_flip">
                 <property name="hexpand">True</property>
                 <property name="valign">center</property>

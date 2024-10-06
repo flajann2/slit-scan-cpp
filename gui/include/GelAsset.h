@@ -53,12 +53,12 @@ namespace Gui {
                                                   mthumb.cols,
                                                   mthumb.rows,
                                                   mthumb.step);
-      thumbnail.set_pixel_size(50);
+      thumbnail.set_pixel_size(80);
       thumbnail.set(pixbuf);      
       prepend(thumbnail);
       append(configuration);
 
-      gel_config = GelConfig::create(gel);
+      gel_config = GelConfig::create(gel, pathname);
       configuration.signal_clicked().connect(sigc::mem_fun(*this, &GelAsset::on_config_clicked));
       
       show();

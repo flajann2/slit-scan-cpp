@@ -41,7 +41,7 @@ namespace Gui {
     shared_ptr<Gtk::Dialog> main_settings_dialog;
 
     bool on_close() {
-      cout << "close event" << endl;
+      cout << "MainSettings close event" << endl;
       main_settings_dialog->hide();
       return true;
     }

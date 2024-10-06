@@ -13,15 +13,21 @@ SSA SSA::ss_app;
 namespace Gui {
   GResource* resource = nullptr;
   shared_ptr<Gtk::Builder> app_builder;
-  shared_ptr<Gtk::Builder> obtain_builder() {
+
+  shared_ptr<Gtk::Builder> obtain_new_builder() {
     if (!resource)
       resource = gresource_get_resource(); // this loads and "registers" the resouce by way of PFM!
 
+    auto builder = Gtk::Builder::create_from_resource(ss::resource + "slitscan_main.ui");
+    builder->add_from_resource(ss::resource + "slitscan_main_settings.ui");
+    builder->add_from_resource(ss::resource + "file_gel_select.ui");
+    builder->add_from_resource(ss::resource + "gel_config.ui");
+    return builder;
+  }
+
+  shared_ptr<Gtk::Builder> obtain_builder() {
     if (!app_builder) {
-      app_builder = Gtk::Builder::create_from_resource(ss::resource + "slitscan_main.ui");
-      app_builder->add_from_resource(ss::resource + "slitscan_main_settings.ui");
-      app_builder->add_from_resource(ss::resource + "file_gel_select.ui");
-      app_builder->add_from_resource(ss::resource + "gel_config.ui");
+      app_builder = obtain_new_builder();
     }
     return app_builder;
   }

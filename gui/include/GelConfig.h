@@ -7,9 +7,12 @@ using namespace std;
 namespace Gui {
   class GelConfig : public Composition {
   public:
-    GelConfig(const cv::Mat& gel_, const std::string& pathname_) : gel(gel_)
-                                                                 , pathname(pathname_) {
-      auto builder = obtain_builder();
+    GelConfig(const cv::Mat& gel_, const std::string& pathname_)
+      : gel(gel_)
+      , pathname(pathname_) {
+      
+      // our own local instance. 
+      builder = obtain_new_builder();
 
       // acquire widgets
       gel_config = builder->get_object<Gtk::Dialog>(ss::gel_config);
@@ -64,6 +67,8 @@ namespace Gui {
     }
     
   private:
+    shared_ptr<Gtk::Builder> builder; // our own private instance
+
     const cv::Mat& gel;
     const std::string& pathname;
     

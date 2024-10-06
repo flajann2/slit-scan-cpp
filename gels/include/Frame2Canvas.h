@@ -19,11 +19,11 @@ namespace Gel {
   // queue_draw() or queue_draw_area() must be called
   // every tick.
   //
-  // bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr
+  // void on_draw(const Cairo::RefPtr<Cairo::Context>& cr
   //              , int width
   //              , int height) 
   void frame_to_canvas(const cv::Mat& frame
-                       , Cairo::RefPtr<Cairo::Context>& cr
+                       , const Cairo::RefPtr<Cairo::Context>& cr
                        , const F2CC& cc) {
     // resize to current canvas size
     cv::Mat resized_frame;

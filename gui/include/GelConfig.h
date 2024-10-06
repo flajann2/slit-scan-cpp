@@ -2,6 +2,8 @@
 // for slitscanning.
 #pragma once
 
+#include <gels.h>
+
 using namespace std;
 
 namespace Gui {
@@ -31,6 +33,9 @@ namespace Gui {
       gel_p1_rotate->signal_value_changed().connect(sigc::mem_fun(*this, &GelConfig::on_rotate_change));
       gel_p1_rate->signal_value_changed().connect(sigc::mem_fun(*this, &GelConfig::on_rate_change));
       gel_p1_flip->signal_state_set().connect(sigc::mem_fun(*this, &GelConfig::on_switch), false);
+
+      // Canvas setup
+      gel_p1_canvas->set_draw_func(sigc::mem_fun(*this, &GelConfig::on_draw));
     }
 
     static auto create(const cv::Mat& gel, const std::string& pathname_) -> unique_ptr<GelConfig> {
@@ -64,6 +69,12 @@ namespace Gui {
     bool on_switch(bool state) {
       cout << "Switch: " << (state ? "ON" : "OFF") << " for " << pathname << endl;
       return true; // Return true to allow the state change
+    }
+    
+    void on_draw(const Cairo::RefPtr<Cairo::Context>& cr
+                 , int width
+                 , int height) {
+      Gel::frame_to_canvas(gel, cr, Gel::F2CC{width, height, true, false});
     }
     
   private:

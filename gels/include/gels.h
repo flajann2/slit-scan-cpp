@@ -26,10 +26,10 @@ namespace Gel {
   
   class GelSource {
   public:
-    GelSource(micros  interval
-              , std::function<void(time_stamp)> callback_)
-      : interval(interval)
-      , callback(callback_) {}
+    GelSource(micros interval_
+              , std::function<void(time_stamp)> tick_func_)
+      : interval(interval_)
+      , tick_func(tick_func_) {}
     
     ~GelSource() { stop(); }
     
@@ -38,17 +38,20 @@ namespace Gel {
     
     void start() {
       if (!running.exchange(true)) {
-        timerThread = std::thread(&GelSource::time_frame_stamps, this);
+        timer_thread = std::thread(&GelSource::time_frame_stamps, this);
       }
     }
   
     void stop() {
       running = false;
-      if (timerThread.joinable()) {
-        timerThread.join();
+      if (timer_thread.joinable()) {
+        timer_thread.join();
       }
     }
 
+    auto tick() {
+    }
+    
     // T Must be a derivate of GelSource
     template <typename T>
     static unique_ptr<GelSource> create() { return make_unique<T>(); }
@@ -59,19 +62,20 @@ namespace Gel {
     }
 
   private:
-    sig_next_frame m_sig_next_frame;    
-
+    sig_next_frame m_sig_next_frame;
+    Glib::Dispatcher m_dispatcher;
+    
     std::atomic<bool> running{false};
-    std::thread timerThread;
-    micros interval;
-    std::function<void(time_stamp)> callback;
+    std::thread timer_thread;
+    std::atomic<micros> interval;
+    std::function<void(time_stamp)> tick_func;
 
     void time_frame_stamps() {
       auto next_tick = time_basis::now() + interval;
       while (running) {
         std::this_thread::sleep_until(next_tick);
         if (running) {
-          callback(next_tick);
+          tick_func(next_tick);
           next_tick += interval;
         }
       }

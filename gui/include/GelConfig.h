@@ -11,7 +11,8 @@ namespace Gui {
   public:
     GelConfig(const cv::Mat& gel_, const std::string& pathname_)
       : gel(gel_)
-      , pathname(pathname_) {
+      , pathname(pathname_)
+      , render_transform(false) {
       
       // our own local instance. 
       builder = obtain_new_builder();
@@ -56,9 +57,20 @@ namespace Gui {
       return true;
     }
 
+    void transform() {
+      gel.copyTo(gel_transform);
+      if (flip) {
+        cv::flip(gel_transform, gel_transform, 1);
+      }
+      Gel::rotate(gel_transform, gel_transform, angle);
+      render_transform = true;
+      gel_p1_canvas->queue_draw();
+    }
+    
     void on_rotate_change() {
-      double value = gel_p1_rotate->get_value();
-      std::cout << "Rotate: " << value << std::endl;
+      angle = gel_p1_rotate->get_value();
+      transform();
+      std::cout << "Rotate: " << angle << std::endl;
     }
 
     void on_rate_change() {
@@ -67,6 +79,8 @@ namespace Gui {
     }
 
     bool on_switch(bool state) {
+      flip = state;
+      transform();
       cout << "Switch: " << (state ? "ON" : "OFF") << " for " << pathname << endl;
       return true; // Return true to allow the state change
     }
@@ -74,13 +88,20 @@ namespace Gui {
     void on_draw(const Cairo::RefPtr<Cairo::Context>& cr
                  , int width
                  , int height) {
-      Gel::frame_to_canvas(gel, cr, Gel::F2CC{width, height, true, false});
+      Gel::frame_to_canvas((render_transform ? gel_transform : gel)
+                           , cr
+                           , Gel::F2CC{width, height, true, false});
     }
     
   private:
     shared_ptr<Gtk::Builder> builder; // our own private instance
 
     const cv::Mat& gel;
+    cv::Mat gel_transform;
+    atomic<bool> render_transform;
+    atomic<double> angle;
+    atomic<double> rate;
+    atomic<bool> flip;
     const std::string& pathname;
     
     shared_ptr<Gtk::Dialog> gel_config;

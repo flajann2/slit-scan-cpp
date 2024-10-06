@@ -51,4 +51,17 @@ namespace Gel {
     Gdk::Cairo::set_source_pixbuf(cr, pixbuf);
     cr->paint();
   }
+
+  void rotate(const cv::Mat& frame, cv::Mat& rotated, double angle) {
+    cv::Point2f center(frame.cols / 2.0, frame.rows / 2.0);
+    cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1.0);
+    cv::warpAffine(frame, rotated, rotationMatrix, frame.size());
+  }
+
 }
+
+
+
+
+
+

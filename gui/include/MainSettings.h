@@ -15,14 +15,18 @@ namespace Gui {
 
     MainSettings() {
       main_settings = Settings(3, 0, 10.0); // TODO: semi-temporary. Load from yaml
+
       auto builder = obtain_builder();
-      main_settings_dialog = builder->get_object<Gtk::Dialog>(ss::main_settings);
 
       // widgets
+      main_settings_dialog = builder->get_object<Gtk::Dialog>(ss::main_settings);
+
       main_width_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_width_e);
       main_spacing_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_spacing_e);
       main_factor_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_factor_e);
-      
+
+      // Signals and slots
+      main_settings_dialog->signal_close_request().connect(sigc::mem_fun(*this, &MainSettings::on_close), false);
       main_width_e->signal_insert_text().connect(sigc::mem_fun(*this
                                                                , &MainSettings::on_insert_text)
                                                  , true);
@@ -35,6 +39,12 @@ namespace Gui {
 
   protected:
     shared_ptr<Gtk::Dialog> main_settings_dialog;
+
+    bool on_close() {
+      cout << "close event" << endl;
+      main_settings_dialog->hide();
+      return true;
+    }
 
     void on_insert_text(const Glib::ustring& text, int* position) {
       cout << "on_insert_text: " << text << "at " << * position << endl;
@@ -66,9 +76,8 @@ namespace Gui {
     static Settings main_settings;
     static unique_ptr<MainSettings> create() { return make_unique<MainSettings>(); }
     
-    void show () {
-      main_settings_dialog->show();
-    }
+    void show () { main_settings_dialog->show(); }
+    void hide () { main_settings_dialog->hide(); }
   };
 
   const MainSettings::Settings& obtain_main_settings() {

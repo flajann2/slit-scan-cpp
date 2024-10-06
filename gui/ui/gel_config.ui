@@ -7,6 +7,8 @@
   <object class="GtkDialog" id="ss_gel_config">
     <property name="default-height">600</property>
     <property name="default-width">800</property>
+    <property name="hide-on-close">True</property>
+    <property name="modal">True</property>
     <property name="title">Gel Config</property>
     <child>
       <object class="GtkNotebook" id="ss_gel_config_note">

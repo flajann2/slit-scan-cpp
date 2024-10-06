@@ -6,6 +6,7 @@
   <object class="GtkDialog" id="ss_main_settings">
     <property name="default-height">500</property>
     <property name="default-width">700</property>
+    <property name="hide-on-close">True</property>
     <property name="margin-bottom">2</property>
     <property name="margin-end">2</property>
     <property name="margin-start">2</property>

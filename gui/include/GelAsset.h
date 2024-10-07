@@ -71,6 +71,9 @@ namespace Gui {
     
   private:
     Placement place;
+
+    // ImageGelSource for shits and giggles for now.
+    Gel::ImageGelSource m_source;
     
     unique_ptr<Gel::GelSource> gel_source;
     unique_ptr<Gui::GelConfig> gel_config;

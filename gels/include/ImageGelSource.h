@@ -13,6 +13,8 @@ namespace Gel {
   public:
     ImageGelSource(micros interval = default_frame_rate)
       : GelSource(interval, [&](time_stamp ts) { next_frame(ts); }) {
+
+      signal_tick().connect(sigc::mem_fun(*this, &ImageGelSource::on_tick));
       start(); // TODO:: dont start here     
     }
 
@@ -27,8 +29,12 @@ namespace Gel {
       double rotation_rate; // rotations per second      
     };
 
-    
   protected:
+    void on_tick(time_stamp tick) {
+      cout << "ImageGelSource tick: " << tick << endl;      
+    }
+    
+    // TODO: deprecated
     void next_frame(time_stamp ts) {
       cout << "next_frame() " << ts << endl;
     }

@@ -26,61 +26,32 @@ namespace Gel {
   using sig_next_frame = sigc::signal<void(const cv::Mat&, time_stamp)>;
 
   enum class ScanMeth { Left, Right, Top, Bottom, Circular };
-  
-  class GelSource {
+
+  class MasterTickServer {
+    friend class IMasterTickServer;
+
   public:
-    GelSource(micros interval_
-              , std::function<void(time_stamp)> tick_func_)
-      : interval(interval_)
-      , tick_func(tick_func_) {
-      m_dispatcher.connect(sigc::mem_fun(*this, &GelSource::internal_tick));
+    MasterTickServer() {
+      m_dispatcher.connect(sigc::mem_fun(*this
+                                         , &MasterTickServer::internal_tick));
     }
     
-    ~GelSource() { stop(); }
-    
-    sig_next_frame signal_next_frame() { return m_sig_next_frame;  }
-    
-    // Start the internal tick server
-    void start() {
-      if (!running.exchange(true)) {
-        timer_thread = std::thread(&GelSource::time_frame_stamps, this);
-      }
-    }
-
-    // Stop the internal tick server
-    void stop() {
-      running = false;
-      if (timer_thread.joinable()) {
-        timer_thread.join();
-      }
-    }
-
-    // T Must be a derivate of GelSource
-    template <typename T>
-    static unique_ptr<GelSource> create() { return make_unique<T>(); }
-
-    // direct thread-safe access to tick server
-    sig_next_tick& signal_tick() { return m_sig_next_tick; }
-    
-  protected:
-    // derived classes will use this to broadcast frames
-    virtual void broadcast_next_frame(cv::Mat frame, time_stamp timestamp) {
-      m_sig_next_frame.emit(frame, timestamp);
-    }
-
-
   private:
-    std::mutex m_mutex;
-    sig_next_frame m_sig_next_frame;
-    sig_next_tick m_sig_next_tick;
+
     Glib::Dispatcher m_dispatcher; // internal tick server will use this
-    
-    std::atomic<bool> running{false};
-    std::thread timer_thread;
-    std::atomic<micros> interval;
-    std::function<void(time_stamp)> tick_func;
+    sig_next_tick m_sig_next_tick;
     time_stamp m_current_tick;
     time_stamp m_next_tick;
+    std::atomic<bool> running{false};
+    std::mutex m_mutex;
+    std::thread timer_thread;
+    std::atomic<micros> interval;
+
+    
+    // send out the internal ticks to the attached slots
+    void internal_tick() {
+      m_sig_next_tick.emit(m_current_tick);
+    }
 
     void time_frame_stamps() {
       {
@@ -94,7 +65,6 @@ namespace Gel {
         if (running) {
           m_current_tick = m_next_tick;
           m_dispatcher.emit();
-          tick_func(m_current_tick);
           {
             lockguard lock(m_mutex);
             m_next_tick += interval.load();
@@ -102,11 +72,68 @@ namespace Gel {
         }
       }
     }
-
-    // send out the internal ticks to the attached slots
-    void internal_tick() {
-      m_sig_next_tick.emit(m_current_tick);
+    
+  protected:
+    // Start the internal tick server
+    void start() {
+      if (!running.exchange(true)) {
+        timer_thread = std::thread(&MasterTickServer::time_frame_stamps, this);
+      }
     }
+
+    // Stop the internal tick server
+    void stop() {
+      running = false;
+      if (timer_thread.joinable()) {
+        timer_thread.join();
+      }
+    }
+
+    // direct thread-safe access to tick server
+    sig_next_tick& signal_tick() { return m_sig_next_tick; }
+  };
+
+  MasterTickServer& obtain_master_tick_server();
+  
+  class IMasterTickServer {
+  private:
+    MasterTickServer& mts;
+    
+  public:
+    IMasterTickServer() : mts(obtain_master_tick_server()) { }
+
+    void start() { mts.start(); }
+    void stop() { mts.stop(); }
+    sig_next_tick& signal_tick() { return mts.signal_tick(); }
+    void set_interval(micros interval) { mts.interval = interval; }
+
+  };
+
+  class GelSource : public IMasterTickServer {
+  public:
+    GelSource(micros interval_) { set_interval(interval_); }
+    
+    ~GelSource() { stop(); }
+    
+    sig_next_frame signal_next_frame() { return m_sig_next_frame;  }
+    
+
+    // T Must be a derivate of GelSource
+    template <typename T>
+    static unique_ptr<GelSource> create() { return make_unique<T>(); }
+
+    
+  protected:
+    // derived classes will use this to broadcast frames
+    virtual void broadcast_next_frame(cv::Mat frame, time_stamp timestamp) {
+      m_sig_next_frame.emit(frame, timestamp);
+    }
+
+
+  private:
+    sig_next_frame m_sig_next_frame;
+
+
   };
 }
 

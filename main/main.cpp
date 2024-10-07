@@ -35,6 +35,11 @@ namespace Gui {
   MainSettings::Settings MainSettings::main_settings;
 }
 
+namespace Gel {
+  static MasterTickServer mts;
+  MasterTickServer& obtain_master_tick_server() { return mts; }
+}
+
 int main(int argc, char* argv[]) {
   return SSA::ss_app.run(argc, argv);
 }

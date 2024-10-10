@@ -2,6 +2,8 @@
 // for slitscanning.
 #pragma once
 
+#include <gels.h>
+
 using namespace std;
 
 namespace Gui {
@@ -24,6 +26,10 @@ namespace Gui {
       gel_chooser = builder->get_object<Gtk::FileChooserNative>(ss::file_gel_chooser);
       canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
 
+      toggle_play   = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_play);
+      video_setup   = builder->get_object<Gtk::Button>(ss::main_video_setup);
+      toggle_record = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_record);
+      
       main_settings_dialog = MainSettings::create();
 
       // signal-slots configuation
@@ -36,6 +42,10 @@ namespace Gui {
       gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_left_gel));
       gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_right_gel));
       gel_chooser->signal_response().connect(sigc::mem_fun(*this, &GelSelection::on_chooser_response));
+
+      toggle_play->  signal_toggled().connect(sigc::mem_fun(*this, &GelSelection::on_play_toggled));
+      video_setup->  signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_video_setup));
+      toggle_record->signal_toggled().connect(sigc::mem_fun(*this, &GelSelection::on_record_toggled));
 
       // Gel Chooser filters
       filter = Gtk::FileFilter::create();
@@ -82,6 +92,12 @@ namespace Gui {
       gel_chooser->show();
     }
 
+    void on_play_toggled() { }
+    void on_video_setup() { }
+    void on_record_toggled() { }
+
+
+    
     void on_chooser_response(int r_id) {
       chosen_files.clear();
       if (r_id == GTK_RESPONSE_ACCEPT) {
@@ -107,6 +123,12 @@ namespace Gui {
         }        
       }
     }
+
+    void on_next_left_frame(const cv::Mat& frame, Gel::time_stamp ts) {
+    }
+    
+    void on_next_right_frame(const cv::Mat& frame, Gel::time_stamp ts) {
+    }
     
   private:
     GelAsset::Placement current_place; // what the user has chosen
@@ -123,6 +145,10 @@ namespace Gui {
     shared_ptr<Gtk::ListBox> gel_left_listbox;
     shared_ptr<Gtk::ListBox> gel_right_listbox;
     shared_ptr<Gtk::DrawingArea> canvas;
+
+    shared_ptr<Gtk::ToggleButton> toggle_play;
+    shared_ptr<Gtk::Button> video_setup;
+    shared_ptr<Gtk::ToggleButton> toggle_record;
 
     Glib::RefPtr<Gtk::FileFilter> filter;
     shared_ptr<Gtk::FileChooserNative> gel_chooser;

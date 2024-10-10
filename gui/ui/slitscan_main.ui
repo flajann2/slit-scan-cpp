@@ -113,9 +113,22 @@
         </child>
         <child>
           <object class="GtkBox">
+            <property name="halign">center</property>
+            <property name="spacing">3</property>
             <child>
               <object class="GtkToggleButton" id="ss_main_toggle_play">
                 <property name="label">PLAY</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="ss_main_video_setup">
+                <property name="label">Video
+Setup</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkToggleButton" id="ss_main_toggle_record">
+                <property name="label">REC</property>
               </object>
             </child>
             <layout>

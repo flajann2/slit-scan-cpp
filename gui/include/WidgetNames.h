@@ -21,6 +21,11 @@ namespace ss {
 
   const std::string file_gel_chooser = "ss_file_gel_chooser";
 
+  //// the buttons at the bottom
+  const std::string main_toggle_play   = "ss_main_toggle_play";
+  const std::string main_video_setup   = "ss_main_video_setup";
+  const std::string main_toggle_record = "ss_main_toggle_record";
+  
   // dialog global settings
   const std::string main_settings                 = "ss_main_settings";
   const std::string main_settings_note            = "ss_main_settings_note";

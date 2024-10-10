@@ -46,7 +46,6 @@ namespace Gel {
     std::mutex m_mutex;
     std::thread timer_thread;
     std::atomic<micros> interval;
-
     
     // send out the internal ticks to the attached slots
     void internal_tick() {
@@ -106,7 +105,6 @@ namespace Gel {
     void stop() { mts.stop(); }
     sig_next_tick& signal_tick() { return mts.signal_tick(); }
     void set_interval(micros interval) { mts.interval = interval; }
-
   };
 
   class GelSource : public IMasterTickServer {
@@ -116,12 +114,10 @@ namespace Gel {
     ~GelSource() { stop(); }
     
     sig_next_frame signal_next_frame() { return m_sig_next_frame;  }
-    
 
     // T Must be a derivate of GelSource
     template <typename T>
     static unique_ptr<GelSource> create() { return make_unique<T>(); }
-
     
   protected:
     // derived classes will use this to broadcast frames

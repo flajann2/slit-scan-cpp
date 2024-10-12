@@ -33,7 +33,9 @@ namespace Gui {
     return app_builder;
   }
 
+  // static and therefore "global" configurations.
   MainSettings::Settings MainSettings::main_settings;
+  VideoConfig::Configuration VideoConfig::video_configuration;
 }
 
 namespace Gel {

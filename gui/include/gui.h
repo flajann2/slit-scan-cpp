@@ -27,9 +27,17 @@
 #include <string_view>
 #include <charconv>
 #include <stdexcept>
+#include <vector>
+#include <tuple>
 
 namespace Gui {
-  class Composition {};
+
+  class Composition {
+  public:
+    virtual void show(){};
+    virtual void hide(){};
+  };
+  
   class Window : public Gtk::Window {};
   class Pane : public Gtk::DrawingArea {};
 }
@@ -42,6 +50,7 @@ namespace Gui {
 #include <Builder.h>
 #include <WidgetNames.h>
 #include <EntryEditor.h>
+#include <VideoConfig.h>
 #include <MainSettings.h>
 #include <GelConfig.h>
 #include <GelAsset.h>

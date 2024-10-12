@@ -48,4 +48,15 @@ namespace ss {
   const std::string gel_config_p2_canvas = "ss_gel_config_p2_canvas";
   const std::string gel_config_note_p3   = "ss_gel_config_note_p3";
   const std::string gel_config_p3_canvas = "ss_gel_config_p3_canvas";
+
+  // Video Config
+  const std::string video_config             = "ss_video_config";
+  const std::string video_config_note        = "ss_video_config_note";
+  const std::string video_config_p1          = "ss_video_config_p1";
+  const std::string video_p1_resolution      = "ss_video_p1_resolution";
+  const std::string video_p1_resolution_list = "ss_video_p1_resolution_list";
+  const std::string video_p1_fps             = "ss_video_p1_fps";
+  const std::string video_p1_container       = "ss_video_p1_container";
+
+  const std::string video_config_p2          = "ss_video_config_p2";
 }

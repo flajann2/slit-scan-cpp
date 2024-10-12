@@ -21,7 +21,7 @@ namespace Gui {
       // initial value
       entry_buffer->set_text(format("{}", field));
     }
-
+    
   protected:
     T from_string(const std::string_view& str) {
       T result;

@@ -22,6 +22,7 @@ namespace Gui {
     builder->add_from_resource(ss::resource + "slitscan_main_settings.ui");
     builder->add_from_resource(ss::resource + "file_gel_select.ui");
     builder->add_from_resource(ss::resource + "gel_config.ui");
+    builder->add_from_resource(ss::resource + "video_config.ui");
     return builder;
   }
 

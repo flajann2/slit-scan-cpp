@@ -12,10 +12,10 @@ int main(int argc, char* argv[]) {
 
   // if not success, exit program
   if (cap.isOpened() == false) {
-      cout << "Cannot open the video camera" << endl;
-      cin.get(); //wait for any key press
-      return -1;
-    } 
+    cout << "Cannot open the video camera" << endl;
+    cin.get(); //wait for any key press
+    return -1;
+  } 
 
   const double dWidth = cap.get(CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
   const double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT); //get the height of frames of the video
@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
 
   /*************************************************
    * Define all parameters here                    */
-  const int slitWidth = 3; // Width of each slit
+  const int slitWidth = 2; // Width of each slit
   const int slitSpacing = 0; // Space between slits
   const double perspective_factor = 10;
   /*************************************************/
@@ -93,12 +93,10 @@ int main(int argc, char* argv[]) {
 
     if (islot >= numberOfSlits)
       islot = 0;
-    //int x = islot * (slitWidth + slitSpacing); // x position for the slit
     int x = dWidth / 2; // x position for the slit
     Rect slitRegion(x, 0, slitWidth, slitHeight); 
     Mat slit = frame(slitRegion);
     flip(slit, slit, 1);
-     
     
     warpAffine(flatCombined, flatCombined, shift_flat, flatCombined.size());
     slit.copyTo(flatCombined(cv::Rect(0, 0, slitWidth, slitHeight)));
@@ -107,7 +105,6 @@ int main(int argc, char* argv[]) {
     
     //show the frame in the created window
     imshow(window_name, perspective);
-    //imshow(window_name, flatCombined);
  
     if (waitKey(1) == 27)  {
       cout << "Esc key is pressed by user. Stoppig the video" << endl;

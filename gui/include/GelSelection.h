@@ -31,7 +31,8 @@ namespace Gui {
       toggle_record = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_record);
       
       main_settings_dialog = MainSettings::create();
-
+      video_config_dialog = VideoConfig::create();
+      
       // signal-slots configuation
       main_load_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_load));
       main_save_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_save));
@@ -93,7 +94,11 @@ namespace Gui {
     }
 
     void on_play_toggled() { }
-    void on_video_setup() { }
+
+    void on_video_setup() {
+      video_config_dialog->show();
+    }
+
     void on_record_toggled() { }
 
 
@@ -134,6 +139,7 @@ namespace Gui {
     GelAsset::Placement current_place; // what the user has chosen
 
     unique_ptr<Gui::MainSettings> main_settings_dialog;
+    unique_ptr<Gui::VideoConfig> video_config_dialog;
     
     shared_ptr<Gtk::Button> main_load_button;
     shared_ptr<Gtk::Button> main_save_button;

@@ -103,6 +103,7 @@ namespace Gel {
 
     void start() { mts.start(); }
     void stop() { mts.stop(); }
+    
     sig_next_tick& signal_tick() { return mts.signal_tick(); }
     void set_interval(micros interval) { mts.interval = interval; }
   };
@@ -138,3 +139,4 @@ namespace Gel {
 #include <ImageGelSource.h>
 #include <VideoGelSource.h>
 #include <CameraGelSource.h>
+#include <SlitScan.h>

@@ -57,11 +57,4 @@ namespace Gel {
     cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1.0);
     cv::warpAffine(frame, rotated, rotationMatrix, frame.size());
   }
-
 }
-
-
-
-
-
-

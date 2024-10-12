@@ -1,0 +1,190 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.92.0 -->
+<interface>
+  <!-- interface-description Video configuration -->
+  <requires lib="gtk" version="4.6"/>
+  <object class="GtkDialog" id="ss_video_config">
+    <property name="default-height">600</property>
+    <property name="default-width">800</property>
+    <property name="hide-on-close">True</property>
+    <property name="modal">True</property>
+    <property name="title">Video Configuration</property>
+    <child>
+      <object class="GtkNotebook" id="ss_video_config_note">
+        <property name="hexpand">True</property>
+        <property name="tab-pos">left</property>
+        <property name="vexpand">True</property>
+        <child>
+          <object class="GtkGrid" id="ss_video_config_p1">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkLabel" id="label_03">
+                <property name="label">File Format</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">2</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label_01">
+                <property name="label">Resolution</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="ss_video_p1_resolution">
+                <property name="model">
+                  <object class="GtkListStore" id="ss_video_p1_resolution_list">
+                    <columns>
+                      <column type="gchararray"/>
+                      <column type="gint"/>
+                    </columns>
+                    <data>
+                      <row>
+                        <col id="0">800 × 600 (4:3)</col>
+                      </row>
+                      <row>
+                        <col id="0"> 1024 × 768 (4:3)</col>
+                      </row>
+                      <row>
+                        <col id="0">1280 × 800 (16:10)</col>
+                      </row>
+                      <row>
+                        <col id="0">1280 × 720 (16:9)</col>
+                      </row>
+                      <row>
+                        <col id="0">1280 × 1024 (5:4)</col>
+                      </row>
+                      <row>
+                        <col id="0">1366 × 768 (16:9)</col>
+                      </row>
+                      <row>
+                        <col id="0">Full HD: 1920 × 1080 (16:9)</col>
+                      </row>
+                      <row>
+                        <col id="0">QHD: 2560 × 1440 (16:9)</col>
+                      </row>
+                      <row>
+                        <col id="0">4K UHD: 3840 × 2160 (16:9)</col>
+                      </row>
+                      <row>
+                        <col id="0">5K: 5120 × 2880</col>
+                      </row>
+                      <row>
+                        <col id="0">8K UHD: 7680 × 4320</col>
+                      </row>
+                    </data>
+                  </object>
+                </property>
+                <child>
+                  <object class="GtkCellRendererText" id="ss_video_p1_resolution_rendertext">
+                    <!-- Custom object fragments -->
+                  </object>
+                  <!-- Custom child fragments -->
+                  <attributes>
+      <attribute name="text">0</attribute>
+    </attributes>
+                </child>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label_02">
+                <property name="label">FPS</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="row">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkComboBoxText" id="ss_video_p1_fps">
+                <items>
+                  <item>24 fps</item>
+                  <item>25 fps</item>
+                  <item>30 fps</item>
+                  <item>50 fps</item>
+                  <item>60 fps</item>
+                </items>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">1</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkComboBoxText" id="ss_video_p1_container">
+                <items>
+                  <item>mp4</item>
+                  <item>avi</item>
+                  <item>mov</item>
+                  <item>webm</item>
+                  <item>mkv</item>
+                  <item>ogg</item>
+                </items>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="column-span">1</property>
+                  <property name="row">2</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label">Format</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkGrid" id="ss_video_config_p2">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">The</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">0</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Drink</property>
+                <layout>
+                  <property name="column">0</property>
+                  <property name="column-span">1</property>
+                  <property name="row">1</property>
+                  <property name="row-span">1</property>
+                </layout>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label">Effects</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

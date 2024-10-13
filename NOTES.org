@@ -106,3 +106,21 @@
    + I have run into an issue where I get getting the same widgets
      when I need new ones. So I am going to create local copies of 
      Builder to nuke the problem.
+** And now, to do the actual slit scanning
+   + We shall start with doing it to the main Gel Selection screen.
+     Then, an actual write to a video file.
+   + MVP will be the actual video file creation. Then we shall release
+     it to the AUR, and go for more features.
+   + Once we polish everything, we will then go for marketing the
+     crap out of slit-scan.
+   + We will make strong use of CSS to make everything
+     "look pretty." Using CSS in an application is a new one
+     for me, but we'll go with it.
+   + The slit-scan algorithm has already been worked out by myself
+     in SSTest. But it needs finess and refining. The flow
+     will obviously not be the same in the application.
+   + The tick server will drive the generation of the video. Since
+     it represents actual time stamps, to mark the beginning, we
+     record the time at the beginning, then take the difference
+     as time progresses, and based all animinations on the delta 
+     time.

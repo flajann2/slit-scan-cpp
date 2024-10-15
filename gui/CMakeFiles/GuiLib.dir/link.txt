@@ -1,0 +1,2 @@
+/usr/bin/llvm-ar qc libGuiLib.a CMakeFiles/GuiLib.dir/gui.cpp.o CMakeFiles/GuiLib.dir/ui/resources.c.o
+/usr/bin/llvm-ranlib libGuiLib.a

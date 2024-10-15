@@ -17,11 +17,13 @@ int main(int argc, char* argv[]) {
     return -1;
   } 
 
+  // in the real world, we will go by the defined resolutions and rescale.
   const double dWidth = cap.get(CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
   const double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT); //get the height of frames of the video
 
   cout << "Resolution of the video : " << dWidth << " x " << dHeight << endl;
 
+  // in video and global config, Move entirely to video config
   /*************************************************
    * Define all parameters here                    */
   const int slitWidth = 2; // Width of each slit
@@ -31,8 +33,10 @@ int main(int argc, char* argv[]) {
   
   const int slitHeight = dHeight; // Height of the slit (full height of the image)
   const int numberOfSlits = dWidth / (slitWidth + slitSpacing); // Number of slits to extract
-
+  // we also must do a trapezodial transform on the slit.
+  
   const int sW = (slitWidth + slitSpacing);
+
   
   // Define source points (corners of the original image)
   cv::Point2f srcPoints[4] = {
@@ -41,12 +45,8 @@ int main(int argc, char* argv[]) {
     cv::Point2f(dWidth - 1, dHeight - 1), 
     cv::Point2f(0, dHeight - 1)
   };
-  for (auto pt : srcPoints)
-    cout << "srcPoint " << pt << endl;
-  cout << endl;
-  
+
   const int higher = dHeight * (perspective_factor - 1.00) / 2.00;
-  cout << "higher " << higher << endl;
   
   // Define destination points (where you want those corners to go)
   cv::Point2f dstPoints[4] = {
@@ -55,15 +55,11 @@ int main(int argc, char* argv[]) {
     cv::Point2f(dWidth, dHeight + higher), 
     cv::Point2f(0, dHeight)
   };
-  for (auto pt : dstPoints)
-    cout << "dstPoint " << pt << endl;
-  cout << endl;
 
+  // *** CRITICAL -- we need to do this for both sides of the slits
   // Create the transformation matrix
   const Mat shift_flat = (Mat_<double>(2, 3) << 1, 0, sW, 0, 1, 0);
   const Mat ss_perspective = cv::getPerspectiveTransform(srcPoints, dstPoints);
-  cout << "ss_perspective " << ss_perspective << endl;
-  cout << endl;
 
   const string window_name = "Slit Scan 3rd Demo";
   namedWindow(window_name);
@@ -71,6 +67,7 @@ int main(int argc, char* argv[]) {
   Mat frame;
   bool bSuccess = cap.read(frame); // read a new frame from video 
 
+  // *** CRITICAL
   cv::Mat flatCombined = cv::Mat::zeros(slitHeight,
                                          slitWidth * numberOfSlits +
                                          slitSpacing * (numberOfSlits - 1),
@@ -80,6 +77,10 @@ int main(int argc, char* argv[]) {
                                          slitSpacing * (numberOfSlits - 1),
                                          frame.type());
 
+  // Main loop -- this will be redone in the application
+  //              to be driven by the tick server
+  //           Note also that in processing image frames the slit will
+  //           be nonstationary
   int islot = 0;
   while (true) {
     bool bSuccess = cap.read(frame); // read a new frame from video 
@@ -91,21 +92,29 @@ int main(int argc, char* argv[]) {
       break;
     }
 
+    // this logic will become a bit more sophisticated 
     if (islot >= numberOfSlits)
       islot = 0;
+
+    // logic for both sides of the slit must be done.
     int x = dWidth / 2; // x position for the slit
+
+    // we we instead compute the slit trapezoid?
     Rect slitRegion(x, 0, slitWidth, slitHeight); 
     Mat slit = frame(slitRegion);
     flip(slit, slit, 1);
-    
+
+    // *** CRITICAL
     warpAffine(flatCombined, flatCombined, shift_flat, flatCombined.size());
     slit.copyTo(flatCombined(cv::Rect(0, 0, slitWidth, slitHeight)));
     warpPerspective(flatCombined, perspective, ss_perspective, frame.size());
     ++islot;
-    
+
+    // In the application, this will be sent to the slots
     //show the frame in the created window
     imshow(window_name, perspective);
- 
+
+    // this replaced by the tick server events
     if (waitKey(1) == 27)  {
       cout << "Esc key is pressed by user. Stoppig the video" << endl;
       break;

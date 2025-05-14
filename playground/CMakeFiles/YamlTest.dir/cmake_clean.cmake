@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/YamlTest.dir/link.d"
   "CMakeFiles/YamlTest.dir/YamlTest.cpp.o"
   "CMakeFiles/YamlTest.dir/YamlTest.cpp.o.d"
   "YamlTest"

@@ -64,7 +64,7 @@ UpdateType: git
 
 # Compiler info
 Compiler: /usr/bin/clang++
-CompilerVersion: 18.1.8
+CompilerVersion: 19.1.7
 
 # Dynamic analysis (MemCheck)
 PurifyCommand: 

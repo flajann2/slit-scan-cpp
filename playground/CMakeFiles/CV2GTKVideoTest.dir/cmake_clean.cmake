@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/CV2GTKVideoTest.dir/link.d"
   "CMakeFiles/CV2GTKVideoTest.dir/CV2GTKVideoTest.cpp.o"
   "CMakeFiles/CV2GTKVideoTest.dir/CV2GTKVideoTest.cpp.o.d"
   "CV2GTKVideoTest"

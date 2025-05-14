@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/development/cpp_proj/slit-scan-cpp/playground/VideoTest.cpp" "playground/CMakeFiles/VideoTest.dir/VideoTest.cpp.o" "gcc" "playground/CMakeFiles/VideoTest.dir/VideoTest.cpp.o.d"
+  "" "playground/VideoTest" "gcc" "playground/CMakeFiles/VideoTest.dir/link.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

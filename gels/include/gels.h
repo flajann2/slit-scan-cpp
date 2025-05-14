@@ -35,7 +35,9 @@ namespace Gel {
       m_dispatcher.connect(sigc::mem_fun(*this
                                          , &MasterTickServer::internal_tick));
     }
-    
+
+    static MasterTickServer master_tick_server; 
+
   private:
 
     Glib::Dispatcher m_dispatcher; // internal tick server will use this
@@ -106,6 +108,10 @@ namespace Gel {
     
     sig_next_tick& signal_tick() { return mts.signal_tick(); }
     void set_interval(micros interval) { mts.interval = interval; }
+
+    static unique_ptr<IMasterTickServer> create() {
+      return make_unique<IMasterTickServer>();
+    }
   };
 
   class GelSource : public IMasterTickServer {

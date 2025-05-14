@@ -39,8 +39,8 @@ namespace Gui {
 }
 
 namespace Gel {
-  static MasterTickServer mts;
-  MasterTickServer& obtain_master_tick_server() { return mts; }
+  MasterTickServer MasterTickServer::master_tick_server;
+  MasterTickServer& obtain_master_tick_server() { return MasterTickServer::master_tick_server; }
 }
 
 int main(int argc, char* argv[]) {

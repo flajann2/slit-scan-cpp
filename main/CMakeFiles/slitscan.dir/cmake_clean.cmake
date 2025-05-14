@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/slitscan.dir/link.d"
   "CMakeFiles/slitscan.dir/main.cpp.o"
   "CMakeFiles/slitscan.dir/main.cpp.o.d"
   "slitscan"

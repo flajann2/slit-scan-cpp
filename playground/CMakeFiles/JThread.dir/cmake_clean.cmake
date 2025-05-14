@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/JThread.dir/link.d"
   "CMakeFiles/JThread.dir/JThread.cpp.o"
   "CMakeFiles/JThread.dir/JThread.cpp.o.d"
   "JThread"

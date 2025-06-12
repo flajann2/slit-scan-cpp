@@ -100,8 +100,6 @@ namespace Gui {
     }
 
     void on_record_toggled() { }
-
-
     
     void on_chooser_response(int r_id) {
       chosen_files.clear();

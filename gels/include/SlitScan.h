@@ -8,7 +8,6 @@ namespace Gel {
   public:
     SlitScan() {
       tick_server = IMasterTickServer::create();
-
     }
 
   protected:
@@ -20,7 +19,4 @@ namespace Gel {
     unique_ptr<IMasterTickServer> tick_server;
     
   };
-
-
 }
-

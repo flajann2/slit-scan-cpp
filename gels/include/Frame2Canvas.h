@@ -10,8 +10,8 @@ namespace Gel {
   struct F2CC {
     int width;
     int height;
-    bool resize;
-    bool preserve_aspect;
+    bool resize;          // scale the frame to the canvas
+    bool preserve_aspect; // when resizing, letterbox instead of stretching
   };
 
   // note that this must only be called from a handler to
@@ -19,40 +19,63 @@ namespace Gel {
   // queue_draw() or queue_draw_area() must be called
   // every tick.
   //
+  // The frame must be 8-bit, 3-channel RGB.
+  //
   // void on_draw(const Cairo::RefPtr<Cairo::Context>& cr
   //              , int width
-  //              , int height) 
-  void frame_to_canvas(const cv::Mat& frame
-                       , const Cairo::RefPtr<Cairo::Context>& cr
-                       , const F2CC& cc) {
-    // resize to current canvas size
-    cv::Mat resized_frame;
-    cv::Mat& out_frame = resized_frame;
+  //              , int height)
+  inline void frame_to_canvas(const cv::Mat& frame
+                              , const Cairo::RefPtr<Cairo::Context>& cr
+                              , const F2CC& cc) {
+    if (frame.empty() || cc.width <= 0 || cc.height <= 0)
+      return;
+
+    // work out the size and position on the canvas
+    int out_w = frame.cols;
+    int out_h = frame.rows;
+    int off_x = 0;
+    int off_y = 0;
 
     if (cc.resize) {
-      cv::resize(frame, resized_frame
-                 , cv::Size(cc.width, cc.height)
-                 , cv::INTER_LINEAR);
-      out_frame = resized_frame;
-    } else {
-      out_frame = frame; // TODO: move/copy semantics? reference?
+      out_w = cc.width;
+      out_h = cc.height;
+      if (cc.preserve_aspect) {
+        const double scale = std::min(double(cc.width)  / frame.cols
+                                      , double(cc.height) / frame.rows);
+        out_w = std::max(1, int(frame.cols * scale));
+        out_h = std::max(1, int(frame.rows * scale));
+        off_x = (cc.width  - out_w) / 2;
+        off_y = (cc.height - out_h) / 2;
+      }
     }
 
-    // Create a GdkPixbuf from the OpenCV Mat
+    // resized only holds pixels if we really had to resize;
+    // otherwise we paint straight from the caller's frame.
+    cv::Mat resized;
+    if (out_w != frame.cols || out_h != frame.rows) {
+      cv::resize(frame, resized
+                 , cv::Size(out_w, out_h)
+                 , 0, 0
+                 , cv::INTER_LINEAR);
+    }
+    const cv::Mat& out_frame = resized.empty() ? frame : resized;
+
+    // Create a GdkPixbuf from the OpenCV Mat. The pixbuf does not
+    // own the pixels, so out_frame must outlive the paint() below.
     Glib::RefPtr<Gdk::Pixbuf> pixbuf =
       Gdk::Pixbuf::create_from_data(out_frame.data
                                     , Gdk::Colorspace::RGB
                                     , false
                                     , 8
-                                    , resized_frame.cols
-                                    , resized_frame.rows
-                                    , resized_frame.step);
+                                    , out_frame.cols
+                                    , out_frame.rows
+                                    , out_frame.step);
 
-    Gdk::Cairo::set_source_pixbuf(cr, pixbuf);
+    Gdk::Cairo::set_source_pixbuf(cr, pixbuf, off_x, off_y);
     cr->paint();
   }
 
-  void rotate(const cv::Mat& frame, cv::Mat& rotated, double angle) {
+  inline void rotate(const cv::Mat& frame, cv::Mat& rotated, double angle) {
     cv::Point2f center(frame.cols / 2.0, frame.rows / 2.0);
     cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1.0);
     cv::warpAffine(frame, rotated, rotationMatrix, frame.size());

@@ -1,6 +1,12 @@
 // SlitScan Test for OpenCV
 
 #include <opencv2/opencv.hpp>
+// OpenCV 5 moved getRotationMatrix2D, getPerspectiveTransform and
+// friends out of imgproc into the new geometry module, and
+// opencv.hpp does not pull that in. OpenCV 4 has no such header.
+#if __has_include(<opencv2/geometry.hpp>)
+#include <opencv2/geometry.hpp>
+#endif
 #include <iostream>
 
 using namespace cv;

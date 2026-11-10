@@ -12,7 +12,10 @@ namespace Gui {
     GelConfig(const cv::Mat& gel_, const std::string& pathname_)
       : gel(gel_)
       , pathname(pathname_)
-      , render_transform(false) {
+      , render_transform(false)
+      , angle(0.0)
+      , rate(0.0)
+      , flip(false) {
       
       // our own local instance. 
       builder = obtain_new_builder();
@@ -46,6 +49,14 @@ namespace Gui {
     void show() { gel_config->show(); }
     void hide() { gel_config->hide(); }
 
+    // the transformations as currently set in the dialog
+    double get_angle() const { return angle; } // degrees
+    double get_rate() const { return rate; }   // degrees per second
+    bool get_flip() const { return flip; }
+
+    // emitted whenever one of the above changes
+    sigc::signal<void()>& signal_changed() { return m_sig_changed; }
+
   protected:
     void on_about_to_open() {
       cout << "Dialog for" << pathname << endl;
@@ -65,6 +76,7 @@ namespace Gui {
       Gel::rotate(gel_transform, gel_transform, angle);
       render_transform = true;
       gel_p1_canvas->queue_draw();
+      m_sig_changed.emit();
     }
     
     void on_rotate_change() {
@@ -74,8 +86,9 @@ namespace Gui {
     }
 
     void on_rate_change() {
-      double value = gel_p1_rate->get_value();
-      std::cout << "Rate: " << value << std::endl;
+      rate = gel_p1_rate->get_value();
+      m_sig_changed.emit();
+      std::cout << "Rate: " << rate << std::endl;
     }
 
     bool on_switch(bool state) {
@@ -95,6 +108,7 @@ namespace Gui {
     
   private:
     shared_ptr<Gtk::Builder> builder; // our own private instance
+    sigc::signal<void()> m_sig_changed;
 
     const cv::Mat& gel;
     cv::Mat gel_transform;

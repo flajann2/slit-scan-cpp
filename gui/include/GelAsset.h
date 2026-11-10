@@ -30,12 +30,15 @@ namespace Gui {
     
     static shared_ptr<Gui::GelAsset> create_gel_asset(std::string gel_pathname
                                                       , Placement place_ = Placement::undefined) {
-      auto gel = make_shared<GelAsset>();
+      auto gel = make_shared<GelAsset>(place_);
       gel->setup_gel_item(gel_pathname);
       return gel;
     }
 
     auto get_placement() { return place; }
+
+    // the source that broadcasts this gel's frames
+    Gel::ImageGelSource& source() { return m_source; }
     
   protected:
     void setup_gel_item(std::string gel_pathname) {
@@ -60,6 +63,17 @@ namespace Gui {
 
       gel_config = GelConfig::create(gel, pathname);
       configuration.signal_clicked().connect(sigc::mem_fun(*this, &GelAsset::on_config_clicked));
+
+      // hand the gel to its source, and keep the source up to date
+      // with what is set in the configuration dialog.
+      Gel::ImageGelSource::OneGel one;
+      one.frame = gel;
+      one.name = pathname;
+      one.load_time = Gel::time_basis::now();
+      one.meth = (place == Placement::right) ? Gel::ScanMeth::Right
+                                             : Gel::ScanMeth::Left;
+      m_source.set_gel(one);
+      gel_config->signal_changed().connect(sigc::mem_fun(*this, &GelAsset::on_config_changed));
       
       show();
     }
@@ -68,14 +82,21 @@ namespace Gui {
       cout << "Config clicked. file " << pathname << endl;
       gel_config->show();
     }
+
+    void on_config_changed() {
+      // the dialog's rate is in degrees per second, the
+      // source wants rotations per second.
+      m_source.set_transform(gel_config->get_angle()
+                             , gel_config->get_rate() / 360.0
+                             , gel_config->get_flip());
+    }
     
   private:
     Placement place;
 
-    // ImageGelSource for shits and giggles for now.
+    // every gel asset is an image for now. Videos and cameras
+    // will want their own kind of source here.
     Gel::ImageGelSource m_source;
-    
-    unique_ptr<Gel::GelSource> gel_source;
     unique_ptr<Gui::GelConfig> gel_config;
 
     Gtk::Image thumbnail;

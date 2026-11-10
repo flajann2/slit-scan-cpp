@@ -32,8 +32,11 @@
 
 namespace Gui {
 
-  class Composition {
+  // sigc::trackable, so that signals connected to the member
+  // functions of a composition are disconnected when it goes away.
+  class Composition : public sigc::trackable {
   public:
+    virtual ~Composition() = default;
     virtual void show(){};
     virtual void hide(){};
   };

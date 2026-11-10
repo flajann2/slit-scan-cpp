@@ -3,6 +3,12 @@
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
+// OpenCV 5 moved getRotationMatrix2D, getPerspectiveTransform and
+// friends out of imgproc into the new geometry module, and
+// opencv.hpp does not pull that in. OpenCV 4 has no such header.
+#if __has_include(<opencv2/geometry.hpp>)
+#include <opencv2/geometry.hpp>
+#endif
 #include <sigc++/sigc++.h>
 #include <thread>
 #include <functional>
@@ -18,14 +24,22 @@
 namespace Gel {
   using namespace std;
   
-  using time_basis =std::chrono::system_clock; // TODO: make this steady_clock 
-  using time_stamp =std::chrono::time_point<time_basis>;
+  // steady_clock, not system_clock: the wall clock can be stepped
+  // (NTP, DST, the user), which would stall the ticks or fire a
+  // burst of them. steady_clock only ever moves forward.
+  using time_basis = std::chrono::steady_clock;
+  using time_stamp = std::chrono::time_point<time_basis>;
   using micros = std::chrono::microseconds;
   using lockguard = std::lock_guard<std::mutex>;
   using sig_next_tick = sigc::signal<void(time_stamp)>;
   using sig_next_frame = sigc::signal<void(const cv::Mat&, time_stamp)>;
 
   enum class ScanMeth { Left, Right, Top, Bottom, Circular };
+
+  // seconds between two time stamps, as a double
+  inline double seconds_between(time_stamp from, time_stamp to) {
+    return std::chrono::duration<double>(to - from).count();
+  }
 
   class MasterTickServer {
     friend class IMasterTickServer;
@@ -36,41 +50,59 @@ namespace Gel {
                                          , &MasterTickServer::internal_tick));
     }
 
+    // the timer thread must be gone before our members are.
+    ~MasterTickServer() { stop(); }
+
     static MasterTickServer master_tick_server; 
 
   private:
 
     Glib::Dispatcher m_dispatcher; // internal tick server will use this
     sig_next_tick m_sig_next_tick;
-    time_stamp m_current_tick;
-    time_stamp m_next_tick;
     std::atomic<bool> running{false};
-    std::mutex m_mutex;
     std::thread timer_thread;
-    std::atomic<micros> interval;
-    
-    // send out the internal ticks to the attached slots
-    void internal_tick() {
-      m_sig_next_tick.emit(m_current_tick);
-    }
+    std::atomic<micros> interval{micros(1000000/30)};
 
-    void time_frame_stamps() {
+    // m_mutex guards m_pending, which is the only state shared
+    // between the timer thread and the GUI thread.
+    std::mutex m_mutex;
+    std::queue<time_stamp> m_pending;
+    
+    // send out the internal ticks to the attached slots.
+    // Runs in the GUI thread, by way of the dispatcher.
+    void internal_tick() {
+      time_stamp tick;
       {
         lockguard lock(m_mutex);
-        m_current_tick = time_basis::now(); 
-        m_next_tick = m_current_tick + interval.load();
+        if (m_pending.empty()) return;
+        tick = m_pending.front();
+        m_pending.pop();
       }
+      m_sig_next_tick.emit(tick);
+    }
+
+    // Runs in the timer thread. next_tick is local to this thread,
+    // so it needs no locking.
+    void time_frame_stamps() {
+      time_stamp next_tick = time_basis::now() + interval.load();
       
       while (running) {
-        std::this_thread::sleep_until(m_next_tick);
-        if (running) {
-          m_current_tick = m_next_tick;
-          m_dispatcher.emit();
-          {
-            lockguard lock(m_mutex);
-            m_next_tick += interval.load();
-          }
+        std::this_thread::sleep_until(next_tick);
+        if (!running) break;
+
+        {
+          lockguard lock(m_mutex);
+          m_pending.push(next_tick);
         }
+        m_dispatcher.emit();
+
+        next_tick += interval.load();
+
+        // if we have fallen behind (machine suspended, debugger,
+        // heavy load), resynchronise rather than firing a burst.
+        const auto now = time_basis::now();
+        if (next_tick < now)
+          next_tick = now + interval.load();
       }
     }
     
@@ -78,6 +110,7 @@ namespace Gel {
     // Start the internal tick server
     void start() {
       if (!running.exchange(true)) {
+        if (timer_thread.joinable()) timer_thread.join();
         timer_thread = std::thread(&MasterTickServer::time_frame_stamps, this);
       }
     }
@@ -88,9 +121,14 @@ namespace Gel {
       if (timer_thread.joinable()) {
         timer_thread.join();
       }
+      // ticks that were queued but not yet delivered are stale now
+      lockguard lock(m_mutex);
+      m_pending = {};
     }
 
-    // direct thread-safe access to tick server
+    bool is_running() { return running; }
+
+    // Slots connected here are called in the GUI thread.
     sig_next_tick& signal_tick() { return m_sig_next_tick; }
   };
 
@@ -105,6 +143,7 @@ namespace Gel {
 
     void start() { mts.start(); }
     void stop() { mts.stop(); }
+    bool is_running() { return mts.is_running(); }
     
     sig_next_tick& signal_tick() { return mts.signal_tick(); }
     void set_interval(micros interval) { mts.interval = interval; }
@@ -114,29 +153,46 @@ namespace Gel {
     }
   };
 
-  class GelSource : public IMasterTickServer {
+  // Base of all gel sources. A source does image processing on its
+  // frames and broadcasts them; it knows nothing about slits.
+  //
+  // The tick server is shared by the whole application, so a source
+  // neither starts nor stops it, nor sets its interval -- whoever
+  // owns playback does that. sigc::trackable makes our signal
+  // connections go away with us.
+  class GelSource : public IMasterTickServer
+                  , public sigc::trackable {
   public:
-    GelSource(micros interval_) { set_interval(interval_); }
+    GelSource() = default;
+    virtual ~GelSource() = default;
     
-    ~GelSource() { stop(); }
-    
-    sig_next_frame signal_next_frame() { return m_sig_next_frame;  }
+    sig_next_frame& signal_next_frame() { return m_sig_next_frame;  }
+
+    // an inactive source ignores the ticks and broadcasts nothing.
+    void set_active(bool active_) {
+      if (active_ && !active) on_activated();
+      active = active_;
+    }
+    bool is_active() const { return active; }
 
     // T Must be a derivate of GelSource
     template <typename T>
     static unique_ptr<GelSource> create() { return make_unique<T>(); }
     
   protected:
-    // derived classes will use this to broadcast frames
-    virtual void broadcast_next_frame(cv::Mat frame, time_stamp timestamp) {
+    // derived classes will use this to broadcast frames. The frame
+    // must not be modified after it has been broadcast, since the
+    // receivers may hold on to it (cv::Mat shares its pixels).
+    virtual void broadcast_next_frame(const cv::Mat& frame, time_stamp timestamp) {
       m_sig_next_frame.emit(frame, timestamp);
     }
 
+    // called when the source goes from inactive to active
+    virtual void on_activated() {}
 
   private:
     sig_next_frame m_sig_next_frame;
-
-
+    bool active = false;
   };
 }
 

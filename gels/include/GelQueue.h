@@ -27,14 +27,15 @@ namespace Gel {
 
   public:
     GelQueue(std::size_t max_size_ = 100) : max_size(max_size_)
-                                          , stop(false) {}
+                                          , stop(false)
+                                          , finishing(false) {}
 
     // Blocks while the queue is full. Returns false -- and drops
     // the object -- if the queue has been shut down.
     bool enqueue(T ob) {
       std::unique_lock<std::mutex> lock(mtx);
-      not_full.wait(lock, [&](){ return stop || !_full(); });
-      if (stop) return false;
+      not_full.wait(lock, [&](){ return stop || finishing || !_full(); });
+      if (stop || finishing) return false;
 
       queue.push(std::move(ob));
       lock.unlock();
@@ -47,7 +48,7 @@ namespace Gel {
     // the GUI thread.
     bool try_enqueue(T ob) {
       std::unique_lock<std::mutex> lock(mtx);
-      if (stop || _full()) return false;
+      if (stop || finishing || _full()) return false;
 
       queue.push(std::move(ob));
       lock.unlock();
@@ -56,11 +57,12 @@ namespace Gel {
     }
 
     // Blocks while the queue is empty. Returns an empty optional
-    // once the queue has been shut down.
+    // once the queue has been shut down, or has been finished and
+    // emptied.
     std::optional<T> dequeue() {
       std::unique_lock<std::mutex> lock(mtx);
-      not_empty.wait(lock, [&](){ return stop || !queue.empty(); });
-      if (stop) return {};
+      not_empty.wait(lock, [&](){ return stop || finishing || !queue.empty(); });
+      if (stop || queue.empty()) return {};
 
       auto ob = std::move(queue.front());
       queue.pop();
@@ -84,7 +86,20 @@ namespace Gel {
       return queue.size();
     }
 
-    // Wakes up every blocked producer and consumer.
+    // The gentle way to end: nothing more is accepted, but what
+    // is already queued can still be taken. Once that is gone,
+    // dequeue() returns empty. Wakes up every blocked producer.
+    void finish() {
+      {
+        std::unique_lock<std::mutex> lock(mtx);
+        finishing = true;
+      }
+      not_empty.notify_all();
+      not_full.notify_all();
+    }
+
+    // The abrupt way: what is queued is abandoned. Wakes up every
+    // blocked producer and consumer.
     void shutdown() {
       {
         // taking the lock here closes the window where a thread
@@ -105,5 +120,6 @@ namespace Gel {
     std::condition_variable not_empty;
     std::condition_variable not_full;
     std::atomic<bool> stop;
+    bool finishing; // guarded by mtx
   };
 }

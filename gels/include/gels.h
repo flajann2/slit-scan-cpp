@@ -262,6 +262,7 @@ namespace Gel {
 }
 
 #include <GelQueue.h>
+#include <Recorder.h>
 #include <Frame2Canvas.h>
 #include <ImageGelSource.h>
 #include <VideoGelSource.h>

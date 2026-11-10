@@ -30,8 +30,8 @@
 //     rounded positions, and the perspective is rendered by
 //     render_half() rather than by warpPerspective.
 //
-// It can also record: the finished frames are written to a video
-// file as they are made.
+// It can also record: the finished frames are handed to a Recorder,
+// which writes them to a video file in a thread of its own.
 //
 // Threading: everything public is to be called from the GUI thread,
 // and never blocks. The work is done in one worker thread, which is
@@ -84,10 +84,11 @@ namespace Gel {
     }
 
     ~SlitScan() {
+      // first, so that a worker waiting on a slow encoder is let go
+      recorder.stop();
       jobs.shutdown();
       if (worker_thread.joinable())
         worker_thread.join();
-      finish_recording(); // the worker is gone, so this is ours now
     }
 
     SlitScan(const SlitScan&) = delete;
@@ -122,6 +123,12 @@ namespace Gel {
       jobs.try_enqueue(std::move(job)); // if we are swamped, drop it
     }
 
+    // Call when playback stops. Ticks that are still waiting their
+    // turn are forgotten, so that the picture stops when the user
+    // says stop, and does not first work through a backlog. Never
+    // blocks.
+    void discard_pending() { ++epoch; }
+
     // Call when playback (re)starts, so that the time spent paused
     // is not taken for time to be scanned.
     void resume() {
@@ -138,34 +145,25 @@ namespace Gel {
                          , int fourcc
                          , double fps
                          , cv::Size size) {
-      auto writer = std::make_shared<cv::VideoWriter>();
-      try {
-        if (!writer->open(pathname, fourcc, fps, size, true) || !writer->isOpened())
-          return false;
-      } catch (const cv::Exception& e) {
-        cerr << "SlitScan: " << e.what() << endl;
-        return false;
-      }
-
-      Job job;
-      job.kind = Job::Kind::StartRecording;
-      job.writer = writer;
-      job.writer_size = size;
-      recording = jobs.enqueue(std::move(job)); // must not be dropped
-      return recording;
+      return recorder.start(pathname, fourcc, fps, size);
     }
 
-    // Finishes the video file.
-    void stop_recording() {
-      if (!recording)
-        return;
-      Job job;
-      job.kind = Job::Kind::StopRecording;
-      jobs.enqueue(std::move(job)); // must not be dropped
-      recording = false;
-    }
+    // No more frames for the video file. Returns at once, and never
+    // waits for the encoder: the file is closed in the background,
+    // and signal_recording_finished() tells when that is done.
+    // Returns false if nothing was being recorded.
+    bool stop_recording() { return recorder.stop(); }
 
-    bool is_recording() const { return recording; }
+    bool is_recording() { return recorder.is_recording(); }
+
+    // which of OpenCV's video backends is writing the recording
+    std::string recording_backend() { return recorder.backend(); }
+
+    // Emitted in the GUI thread when a recording's file has been
+    // closed, with how many frames went into it.
+    sigc::signal<void(const Recorder::Result&)>& signal_recording_finished() {
+      return recorder.signal_finished();
+    }
 
     // Wipes the strips and forgets the frames.
     void clear() {
@@ -183,6 +181,7 @@ namespace Gel {
       Job job;
       job.kind = Job::Kind::Tick;
       job.ts = tick;
+      job.epoch = epoch.load();
       jobs.try_enqueue(std::move(job));
     }
 
@@ -201,15 +200,13 @@ namespace Gel {
 
   private:
     struct Job {
-      enum class Kind { Configure, Frame, Tick, Resume, Clear
-                        , StartRecording, StopRecording };
+      enum class Kind { Configure, Frame, Tick, Resume, Clear };
       Kind kind = Kind::Tick;
       Side side = Side::Left;
       cv::Mat frame;
       time_stamp ts;
       Params params;
-      std::shared_ptr<cv::VideoWriter> writer;
-      cv::Size writer_size;
+      unsigned epoch = 0; // of a Tick: see discard_pending()
     };
 
     // the scan state of one side. Worker thread only.
@@ -237,13 +234,16 @@ namespace Gel {
     sig_next_frame m_sig_next_frame;
     Params requested;
     bool configured = false;
-    bool recording = false;
 
     // ---- shared between the two threads
     GelQueue<Job> jobs;
+    std::atomic<unsigned> epoch{0}; // goes up each time playback stops
     std::mutex out_mutex; // guards out_frame and out_ts
     cv::Mat out_frame;
     time_stamp out_ts;
+
+    // The recording. It has a thread of its own; see Recorder.h.
+    Recorder recorder;
 
     // ---- worker thread state
     std::thread worker_thread;
@@ -268,8 +268,6 @@ namespace Gel {
     bool have_last_tick = false;
     time_stamp last_tick;
     double slit_debt = 0.0;     // fractional slits carried to the next tick
-    std::shared_ptr<cv::VideoWriter> writer; // set while recording
-    cv::Size writer_size;
 
     static Params sanitized(Params q) {
       q.width  = std::max(q.width, 2);
@@ -303,6 +301,8 @@ namespace Gel {
         }
 
         case Job::Kind::Tick:
+          if (job->epoch != epoch.load())
+            break; // from before playback was stopped
           if (ready) {
             integrate(job->ts);
             compose(job->ts);
@@ -326,36 +326,8 @@ namespace Gel {
           slit_debt = 0.0;
           have_last_tick = false;
           break;
-
-        case Job::Kind::StartRecording:
-          finish_recording();
-          writer = job->writer;
-          writer_size = job->writer_size;
-          break;
-
-        case Job::Kind::StopRecording:
-          finish_recording();
-          break;
         }
       }
-    }
-
-    void finish_recording() {
-      if (writer) {
-        writer->release(); // writes out the end of the file
-        writer.reset();
-      }
-    }
-
-    // the video file wants BGR, at the size it was opened with.
-    void record(const cv::Mat& rgb) {
-      if (!writer)
-        return;
-      cv::Mat bgr;
-      cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
-      if (bgr.size() != writer_size)
-        cv::resize(bgr, bgr, writer_size, 0, 0, cv::INTER_AREA);
-      writer->write(bgr);
     }
 
     SideState& side_state(Side side) {
@@ -710,7 +682,7 @@ namespace Gel {
         mirrored.copyTo(out(cv::Rect(0, 0, half, p.height)));
       }
 
-      record(out);
+      recorder.write(out); // does nothing unless we are recording
 
       {
         lockguard lock(out_mutex);

@@ -38,6 +38,7 @@ namespace Gui {
       // the slit scanner, and the canvas it paints to
       slit_scan = make_unique<Gel::SlitScan>();
       slit_scan->signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_scan_frame));
+      slit_scan->signal_recording_finished().connect(sigc::mem_fun(*this, &GelSelection::on_recording_finished));
       canvas->set_draw_func(sigc::mem_fun(*this, &GelSelection::on_draw));
       ticker.signal_tick().connect(sigc::mem_fun(*this, &GelSelection::on_tick));
       
@@ -185,8 +186,11 @@ namespace Gui {
       return Glib::build_filename(dir, "slitscan-" + stamp.raw() + "." + vc.format);
     }
 
+    // PLAY is a toggle: the first click starts the scan and the
+    // second stops it.
     void on_play_toggled() {
       playing = toggle_play->get_active();
+      cout << (playing ? "PLAY on" : "PLAY off") << endl;
 
       if (playing) {
         const auto& vc = VideoConfig::obtain_video_configiguration();
@@ -199,6 +203,7 @@ namespace Gui {
         ticker.start();
       } else {
         ticker.stop();
+        slit_scan->discard_pending(); // stop now, not after the backlog
         refresh_active_gels();
       }
     }
@@ -243,12 +248,25 @@ namespace Gui {
     }
 
     // REC records what the scanner produces, so there is only
-    // something to record while PLAY is on.
+    // something to record while PLAY is on. The first click starts
+    // a new video file and the second ends it.
+    //
+    // Nothing here waits for the video encoder. Ending a recording
+    // only says "no more frames"; the file is closed in the
+    // background and on_recording_finished() hears of it. That way
+    // the buttons keep answering whatever the encoder is up to.
     void on_record_toggled() {
       if (!toggle_record->get_active()) {
-        if (slit_scan->is_recording()) {
-          slit_scan->stop_recording();
-          cout << "Recording finished: " << recording_to << endl;
+        if (slit_scan->stop_recording()) {
+          closing_recordings.insert(recording_to);
+          report_recording("Closing " + recording_to + " ...");
+
+          // if the encoder has still not let go of the file after
+          // a while, say so instead of leaving the user guessing.
+          const std::string pathname = recording_to;
+          Glib::signal_timeout().connect_once(
+            sigc::track_obj([this, pathname] { on_closing_overdue(pathname); }, *this)
+            , 5000);
         }
         return;
       }
@@ -263,13 +281,42 @@ namespace Gui {
                                      , fourcc_for_format(vc.format)
                                      , fps
                                      , cv::Size(params.width, params.height))) {
-        cout << "Recording to " << recording_to << endl;
-        toggle_record->set_tooltip_text("Recording to " + recording_to);
+        recording_backend = slit_scan->recording_backend();
+        // REC with PLAY off is armed, but has nothing to record yet
+        report_recording("Recording to " + recording_to
+                         + " (" + recording_backend + ")"
+                         + (playing ? "" : " -- nothing is recorded until PLAY is on"));
       } else {
-        cerr << "SlitScan: cannot record to " << recording_to << endl;
-        toggle_record->set_tooltip_text("Could not record to " + recording_to);
+        report_recording("Could not record to " + recording_to);
         toggle_record->set_active(false); // comes back through here, harmlessly
       }
+    }
+
+    // the recorder has closed a file
+    void on_recording_finished(const Gel::Recorder::Result& result) {
+      closing_recordings.erase(result.pathname);
+      if (result.frames > 0)
+        report_recording(std::format("Recorded {} frames to {}"
+                                     , result.frames, result.pathname));
+      else
+        report_recording("Nothing was recorded, so no file was kept. "
+                         "REC records while PLAY is on.");
+    }
+
+    void on_closing_overdue(const std::string& pathname) {
+      if (closing_recordings.count(pathname))
+        report_recording("The video encoder (" + recording_backend
+                         + ") has still not closed " + pathname
+                         + ". The file may be incomplete.");
+    }
+
+    // Says what the recording is doing: on the terminal, and as the
+    // tooltip of REC. The tooltip is set a moment later, from the
+    // main loop, to keep the click handler down to the bare click.
+    void report_recording(const std::string& message) {
+      cout << message << endl;
+      Glib::signal_idle().connect_once(
+        sigc::track_obj([this, message] { toggle_record->set_tooltip_text(message); }, *this));
     }
     
     void on_chooser_response(int r_id) {
@@ -321,6 +368,8 @@ namespace Gui {
     bool playing = false;
     cv::Mat scan_frame; // the latest finished frame, for the canvas
     std::string recording_to; // the file being recorded, or last recorded
+    std::string recording_backend; // which OpenCV video backend writes it
+    std::set<std::string> closing_recordings; // stopped, not yet closed
 
     unique_ptr<Gui::MainSettings> main_settings_dialog;
     unique_ptr<Gui::VideoConfig> video_config_dialog;

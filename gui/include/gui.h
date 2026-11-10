@@ -23,11 +23,13 @@
 #include <iostream>
 
 #include <format>
+#include <cstdio>
 #include <string>
 #include <string_view>
 #include <charconv>
 #include <stdexcept>
 #include <vector>
+#include <set>
 #include <tuple>
 
 namespace Gui {

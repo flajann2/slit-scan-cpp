@@ -114,7 +114,7 @@ namespace Gui {
       cv::resize(gel, mthumb
                  , cv::Size(thumb_width, thumb_height)
                  , 0, 0
-                 , cv::INTER_LINEAR);
+                 , cv::INTER_AREA);
       pixbuf = Gdk::Pixbuf::create_from_data(mthumb.data,
                                                   Gdk::Colorspace::RGB,
                                                   false,

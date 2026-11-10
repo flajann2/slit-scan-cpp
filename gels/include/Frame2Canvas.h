@@ -53,10 +53,13 @@ namespace Gel {
     // otherwise we paint straight from the caller's frame.
     cv::Mat resized;
     if (out_w != frame.cols || out_h != frame.rows) {
+      // shrinking has to average over the pixels it drops, or
+      // fine detail turns into jaggies and shimmer.
+      const bool shrinking = out_w < frame.cols || out_h < frame.rows;
       cv::resize(frame, resized
                  , cv::Size(out_w, out_h)
                  , 0, 0
-                 , cv::INTER_LINEAR);
+                 , shrinking ? cv::INTER_AREA : cv::INTER_LINEAR);
     }
     const cv::Mat& out_frame = resized.empty() ? frame : resized;
 

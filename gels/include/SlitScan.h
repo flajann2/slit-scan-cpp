@@ -25,6 +25,10 @@
 //     produced at slits_per_second no matter the tick rate.
 //   + the slit can sweep across the frame. A still image needs
 //     that, or every slit would be the same.
+//   + it is filtered against aliasing. The new slits of a tick are
+//     one seamless stretch of the frame rather than pieces cut at
+//     rounded positions, and the perspective is rendered by
+//     render_half() rather than by warpPerspective.
 //
 // It can also record: the finished frames are written to a video
 // file as they are made.
@@ -37,6 +41,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace Gel {
 
@@ -213,6 +218,17 @@ namespace Gel {
       cv::Mat scratch;    // same size; we shift into it and swap
       cv::Mat frame;      // latest frame from the source
       double phase = 0.0; // where the slit is in its sweep
+
+      // the frame scaled to the height of the strip, so that cutting
+      // slits is a matter of columns only. Made when it is needed.
+      cv::Mat prepared;
+      bool prepared_stale = true;
+
+      // where the slit was, and what it saw, at the last tick. The
+      // new slits fill in smoothly between then and now.
+      bool have_prev = false;
+      double prev_u = 0.5;  // slit position, 0..1 across the frame
+      cv::Mat prev_column;  // one column, the height of the strip
     };
 
     // ---- GUI thread state
@@ -236,6 +252,19 @@ namespace Gel {
     SideState left;
     SideState right;
     cv::Mat perspective;        // strip -> one half of the picture
+
+    // The perspective transform, taken apart for rendering. It
+    // keeps vertical lines vertical, so it comes down to two simple
+    // things: every column of the picture is a squeezed span of
+    // columns of the strip, stretched up and down about the middle.
+    // Knowing the span is what lets us average over all of it and
+    // keep the picture free of jaggies; see render_half(). These
+    // are the tables for it, each the size of a half picture.
+    cv::Mat span_lo_x;   // per column: left edge of its span in the strip
+    cv::Mat span_hi_x;   //             right edge
+    cv::Mat span_y;      // per pixel: the row of the strip it comes from
+    cv::Mat span_weight; // 1 / width of the span, to turn a sum into an average
+
     bool have_last_tick = false;
     time_stamp last_tick;
     double slit_debt = 0.0;     // fractional slits carried to the next tick
@@ -259,9 +288,19 @@ namespace Gel {
           apply_params(sanitized(job->params));
           break;
 
-        case Job::Kind::Frame:
-          side_state(job->side).frame = job->frame;
+        case Job::Kind::Frame: {
+          // The same Mat again (a still image is sent on every tick)
+          // is not a new frame. We hold a reference to the one we
+          // have, so its pixels cannot have been freed and reused,
+          // and the same address really is the same picture.
+          SideState& s = side_state(job->side);
+          if (job->frame.data != s.frame.data
+              || job->frame.size() != s.frame.size()) {
+            s.frame = job->frame;
+            s.prepared_stale = true;
+          }
           break;
+        }
 
         case Job::Kind::Tick:
           if (ready) {
@@ -277,6 +316,10 @@ namespace Gel {
         case Job::Kind::Clear:
           for (SideState* s : {&left, &right}) {
             s->frame.release();
+            s->prepared.release();
+            s->prepared_stale = true;
+            s->have_prev = false;
+            s->prev_column.release();
             s->phase = 0.0;
             if (!s->strip.empty()) s->strip.setTo(cv::Scalar::all(0));
           }
@@ -358,21 +401,85 @@ namespace Gel {
         , cv::Point2f(0, float(h))
       };
       perspective = cv::getPerspectiveTransform(src_points, dst_points);
+      build_render_tables(half, p.height);
+
+      if (geometry_changed) {
+        for (SideState* s : {&left, &right}) {
+          s->prepared_stale = true;
+          s->prev_column.release();
+        }
+      }
       ready = true;
     }
 
-    // Where the left edge of the slit is, for a sweep phase. The
-    // slit runs across the frame and back, one way per unit of phase.
-    int slit_x(int range, double phase, bool sweeps) const {
-      if (range <= 0)
-        return 0;
+    // Take the perspective transform apart; see the tables above.
+    void build_render_tables(int half, int high) {
+      const cv::Matx33d inverse = cv::Matx33d(perspective).inv();
+
+      // where a point of the picture comes from in the strip. Both
+      // are in OpenCV's coordinates, where a pixel's centre is at
+      // whole numbers.
+      auto strip_point = [&](double x, double y) {
+        const cv::Vec3d v = inverse * cv::Vec3d(x, y, 1.0);
+        return cv::Point2d(v[0] / v[2], v[1] / v[2]);
+      };
+      const double mid_y = (high - 1) / 2.0;
+
+      span_lo_x.create(high, half, CV_32FC1);
+      span_hi_x.create(high, half, CV_32FC1);
+      span_y.create(high, half, CV_32FC1);
+      span_weight.create(high, half, CV_32FC3);
+
+      for (int x = 0; x < half; ++x) {
+        // The span of the strip that lands on this column: from
+        // the left edge of the column to its right edge. The +0.5
+        // moves us to coordinates where pixel i covers [i, i+1).
+        double lo = strip_point(x - 0.5, mid_y).x + 0.5;
+        double hi = strip_point(x + 0.5, mid_y).x + 0.5;
+        if (lo > hi) std::swap(lo, hi);
+
+        // never narrower than one pixel: a one pixel wide average
+        // at a fractional position is plain linear interpolation.
+        if (hi - lo < 1.0) {
+          const double mid = (lo + hi) / 2.0;
+          lo = mid - 0.5;
+          hi = mid + 0.5;
+        }
+        lo = std::clamp(lo, 0.0, double(half) - 1.0);
+        hi = std::clamp(hi, lo + 1.0, double(half));
+
+        // cv::remap reads positions to the nearest 1/32 of a pixel.
+        // Round the edges the same way ourselves, so that the width
+        // we divide by is exactly the width that gets summed;
+        // otherwise the columns come out unevenly bright.
+        lo = std::round(lo * 32.0) / 32.0;
+        hi = std::round(hi * 32.0) / 32.0;
+
+        // the vertical stretch of this column, which is linear:
+        // the rows of the strip that its top and bottom come from.
+        const double top = strip_point(x, 0).y;
+        const double bottom = strip_point(x, high - 1).y;
+        const double per_row = (high > 1) ? (bottom - top) / (high - 1) : 0.0;
+        const float weight = float(1.0 / (hi - lo));
+        for (int y = 0; y < high; ++y) {
+          span_lo_x.at<float>(y, x) = float(lo);
+          span_hi_x.at<float>(y, x) = float(hi);
+          span_y.at<float>(y, x) = float(top + per_row * y);
+          span_weight.at<cv::Vec3f>(y, x) = cv::Vec3f(weight, weight, weight);
+        }
+      }
+    }
+
+    // The slit's position for a sweep phase, from 0 at the left of
+    // the frame to 1 at the right. It runs across and back, one way
+    // per unit of phase.
+    double slit_u(double phase, bool sweeps) const {
       if (!sweeps || p.sweep_rate == 0.0)
-        return range / 2;
+        return 0.5;
 
       double t = std::fmod(phase, 2.0);
       if (t < 0.0) t += 2.0;
-      const double u = (t <= 1.0) ? t : 2.0 - t;
-      return std::clamp(int(std::lround(u * range)), 0, range);
+      return (t <= 1.0) ? t : 2.0 - t;
     }
 
     // Cut the slits that are due and add them to the strips.
@@ -392,6 +499,90 @@ namespace Gel {
       add_slits(right, slits, p.sweep_right);
     }
 
+    // Scale the frame to the height of the strip, once per frame.
+    // Shrinking averages over the rows it drops (INTER_AREA);
+    // plain interpolation there would alias.
+    void prepare(SideState& s) {
+      const int high = s.strip.rows;
+      if (!s.prepared_stale && s.prepared.rows == high)
+        return;
+
+      if (s.frame.rows == high)
+        s.prepared = s.frame;
+      else
+        cv::resize(s.frame, s.prepared, cv::Size(s.frame.cols, high), 0, 0
+                   , (s.frame.rows > high) ? cv::INTER_AREA : cv::INTER_CUBIC);
+      s.prepared_stale = false;
+    }
+
+    // The new slits, as one block of picture `block_w` wide with
+    // the newest column at x = 0.
+    //
+    // Between the last tick and this one the slit went from x_prev
+    // to x_cur across the frame (in pixels, where pixel i covers
+    // [i, i+1)). The block is that stretch of the frame, resampled
+    // to fit, so that neighbouring slits join up without a seam
+    // whatever the sweep speed is. This is what replaces cutting
+    // fixed pieces at rounded positions, which gave the jaggies.
+    void swept_block(const cv::Mat& frame, double x_prev, double x_cur
+                     , int block_w, cv::Mat& block) const {
+      const int high = frame.rows;
+      const double per_column = std::abs(x_cur - x_prev) / block_w;
+
+      if (per_column <= 1.0) {
+        // The frame is being stretched: interpolate. Column c of
+        // the block looks at x_cur + (x_prev - x_cur) (c + 0.5) / w.
+        const double a = (x_prev - x_cur) / block_w;
+        const double b = x_cur + a * 0.5 - 0.5;
+        const cv::Matx23d block_to_frame(a, 0.0, b
+                                         , 0.0, 1.0, 0.0);
+        cv::warpAffine(frame, block, block_to_frame, cv::Size(block_w, high)
+                       , cv::INTER_LINEAR | cv::WARP_INVERSE_MAP
+                       , cv::BORDER_REPLICATE);
+      } else {
+        // The frame is being squeezed: average, so that nothing
+        // the slit passed over is skipped.
+        int x0 = int(std::floor(std::min(x_prev, x_cur)));
+        int x1 = int(std::ceil(std::max(x_prev, x_cur)));
+        x0 = std::clamp(x0, 0, frame.cols - 1);
+        x1 = std::clamp(x1, x0 + 1, frame.cols);
+        cv::resize(frame(cv::Rect(x0, 0, x1 - x0, high)), block
+                   , cv::Size(block_w, high), 0, 0, cv::INTER_AREA);
+        if (x_cur > x_prev)
+          cv::flip(block, block, 1); // newest goes at x = 0
+      }
+    }
+
+    // The same for a slit that is standing still: there is nothing
+    // to sweep over, so the block fades from what the slit saw at
+    // the last tick to what it sees now.
+    void faded_block(SideState& s, const cv::Mat& frame, double u
+                     , int block_w, cv::Mat& block) const {
+      const int high = frame.rows;
+
+      // what the slit sees: slit_width columns of the frame, averaged
+      const int aperture = std::min(p.slit_width, frame.cols);
+      const int x0 = std::clamp(int(std::lround(u * frame.cols - aperture / 2.0))
+                                , 0, frame.cols - aperture);
+      cv::Mat column;
+      if (aperture == 1)
+        column = frame.col(x0).clone();
+      else
+        cv::resize(frame(cv::Rect(x0, 0, aperture, high)), column
+                   , cv::Size(1, high), 0, 0, cv::INTER_AREA);
+
+      if (s.prev_column.size() != column.size())
+        s.prev_column = column;
+
+      block.create(high, block_w, CV_8UC3);
+      for (int c = 0; c < block_w; ++c) {
+        const double now = 1.0 - (c + 0.5) / block_w; // 1 newest, 0 oldest
+        cv::Mat target = block.col(c);
+        cv::addWeighted(s.prev_column, 1.0 - now, column, now, 0.0, target);
+      }
+      s.prev_column = column;
+    }
+
     void add_slits(SideState& s, int slits, bool sweeps) {
       if (slits <= 0 || s.frame.empty())
         return;
@@ -400,7 +591,10 @@ namespace Gel {
       const int pitch = sw + p.slit_spacing;
       const int wide  = s.strip.cols;
       const int high  = s.strip.rows;
-      const int shift = (slits >= wide) ? wide : std::min(slits * pitch, wide);
+
+      // no more slits than fit in the strip
+      slits = std::min(slits, wide / pitch + 1);
+      const int shift = std::min(slits * pitch, wide);
 
       // move what is there along by `shift`, into the scratch
       // image, blank the gap at the front, and swap.
@@ -411,44 +605,87 @@ namespace Gel {
       s.scratch(cv::Rect(0, 0, shift, high)).setTo(cv::Scalar::all(0));
       std::swap(s.strip, s.scratch);
 
-      // now the new slits. Slit 0 is the newest and sits at x = 0;
-      // the others were cut earlier in the sweep and sit behind it.
+      // where the slit is now, and where it was at the last tick
       const double step = (p.slits_per_second > 0.0)
         ? p.sweep_rate / p.slits_per_second
         : 0.0;
       s.phase += slits * step;
 
-      const int src_w = std::min(sw, s.frame.cols);
-      cv::Mat sized;
-      cv::Mat mirrored;
+      const double u_cur  = slit_u(s.phase, sweeps);
+      const double u_prev = s.have_prev ? s.prev_u : u_cur;
+      s.prev_u = u_cur;
+      s.have_prev = true;
 
+      // all the new slits as one seamless block of picture
+      prepare(s);
+      const int block_w = slits * sw;
+      cv::Mat block;
+      if (u_prev != u_cur) {
+        swept_block(s.prepared, u_prev * s.prepared.cols, u_cur * s.prepared.cols
+                    , block_w, block);
+        s.prev_column = block.col(0).clone();
+      } else {
+        faded_block(s, s.prepared, u_cur, block_w, block);
+      }
+
+      // and into the strip it goes, a slit at a time, leaving the
+      // spacing between them. Slit 0 is the newest, at x = 0.
       for (int j = 0; j < slits; ++j) {
         const int x_dst = j * pitch;
         if (x_dst >= wide)
           break;
         const int w_dst = std::min(sw, wide - x_dst);
-
-        const int x_src = slit_x(s.frame.cols - src_w, s.phase - j * step, sweeps);
-        const cv::Mat slit = s.frame(cv::Rect(x_src, 0, src_w, s.frame.rows));
-
-        if (slit.cols != sw || slit.rows != high)
-          cv::resize(slit, sized, cv::Size(sw, high), 0, 0, cv::INTER_LINEAR);
-        else
-          sized = slit;
-
-        // as in SSTest, the slit goes in mirrored, so that the
-        // pixels inside a slit run the same way as the slits do.
-        cv::flip(sized, mirrored, 1);
-        mirrored(cv::Rect(0, 0, w_dst, high))
+        block(cv::Rect(j * sw, 0, w_dst, high))
           .copyTo(s.strip(cv::Rect(x_dst, 0, w_dst, high)));
       }
+    }
+
+    // One half of the picture from a strip: the perspective
+    // transform, filtered against aliasing.
+    //
+    // Towards the middle of the picture many columns of the strip
+    // are squeezed into one. warpPerspective looks at just the 2 x 2
+    // pixels where each point lands, so there it skips most of the
+    // strip, and fine detail turns into jaggies and shimmer. Here
+    // each pixel of the picture is instead the average of the whole
+    // span of the strip that it covers.
+    //
+    // A running total along each row makes that cheap: the sum
+    // over a span is the total at its right edge less the total at
+    // its left, however wide the span is. Reading the totals
+    // between pixels by linear interpolation makes it exact for
+    // edges that fall inside a pixel, and where the span is a
+    // single pixel wide it comes to plain linear interpolation.
+    // The stretch up and down is done in the same reading.
+    void render_half(const cv::Mat& strip, cv::Mat& out) const {
+      const int high = strip.rows;
+
+      // totals(y, x) is the sum of row y left of x. cv::integral
+      // sums over everything above as well, so take the row above
+      // away again. 32 bit sums do unless the picture is huge.
+      const bool huge = double(strip.cols) * high * 255.0 > 2.0e9;
+      cv::Mat integral;
+      cv::integral(strip, integral, huge ? CV_64F : CV_32S);
+      // (subtract first and convert to float after: the sums over
+      // the whole picture are too big for a float to hold exactly,
+      // the totals of one row are not.)
+      cv::Mat totals;
+      cv::subtract(integral.rowRange(1, high + 1), integral.rowRange(0, high)
+                   , totals);
+      totals.convertTo(totals, CV_32F);
+
+      cv::Mat at_lo, at_hi;
+      cv::remap(totals, at_lo, span_lo_x, span_y, cv::INTER_LINEAR, cv::BORDER_REPLICATE);
+      cv::remap(totals, at_hi, span_hi_x, span_y, cv::INTER_LINEAR, cv::BORDER_REPLICATE);
+
+      cv::subtract(at_hi, at_lo, at_hi);
+      cv::multiply(at_hi, span_weight, at_hi);
+      at_hi.convertTo(out, CV_8U);
     }
 
     // Build the output frame from the two strips and hand it over.
     void compose(time_stamp tick) {
       const int half = p.width / 2;
-      const cv::Size half_size(half, p.height);
-
       const SideState* r = &right;
       const SideState* l = &left;
       if (p.mirror_missing_side) {
@@ -461,13 +698,13 @@ namespace Gel {
       cv::Mat warped;
 
       if (!r->frame.empty()) {
-        cv::warpPerspective(r->strip, warped, perspective, half_size);
+        render_half(r->strip, warped);
         warped.copyTo(out(cv::Rect(p.width - half, 0, half, p.height)));
       }
 
       if (!l->frame.empty()) {
         if (l != r || warped.empty())
-          cv::warpPerspective(l->strip, warped, perspective, half_size);
+          render_half(l->strip, warped);
         cv::Mat mirrored;
         cv::flip(warped, mirrored, 1);
         mirrored.copyTo(out(cv::Rect(0, 0, half, p.height)));

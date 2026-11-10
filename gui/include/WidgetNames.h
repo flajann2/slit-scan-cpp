@@ -15,6 +15,8 @@ namespace ss {
   
   const std::string main_gel_get_left = "ssb_main_gel_get_left";
   const std::string main_gel_get_right = "ssb_main_gel_get_right";
+  const std::string main_gel_cam_left = "ssb_main_gel_cam_left";
+  const std::string main_gel_cam_right = "ssb_main_gel_cam_right";
   const std::string main_gel_list_left = "ss_main_gel_list_left";
   const std::string main_gel_list_right = "ss_main_gel_list_right";
   const std::string main_canvas = "ss_main_canvas";
@@ -33,6 +35,7 @@ namespace ss {
   const std::string main_settings_p1_width_e      = "ss_main_settings_p1_width_e";
   const std::string main_settings_p1_spacing_e    = "ss_main_settings_p1_spacing_e";
   const std::string main_settings_p1_factor_e     = "ss_main_settings_p1_factor_e";
+  const std::string main_settings_p1_sweep_e      = "ss_main_settings_p1_sweep_e";
 
   const std::string main_settings_note_p2_video   = "ss_main_settings_note_p2_video";
 

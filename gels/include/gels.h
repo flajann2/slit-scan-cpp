@@ -20,6 +20,8 @@
 #include <condition_variable>
 #include <optional>
 #include <tuple>
+#include <cmath>
+#include <string>
 
 namespace Gel {
   using namespace std;
@@ -153,6 +155,9 @@ namespace Gel {
     }
   };
 
+  // defined in Frame2Canvas.h
+  inline void rotate(const cv::Mat& frame, cv::Mat& rotated, double angle);
+
   // Base of all gel sources. A source does image processing on its
   // frames and broadcasts them; it knows nothing about slits.
   //
@@ -163,6 +168,13 @@ namespace Gel {
   class GelSource : public IMasterTickServer
                   , public sigc::trackable {
   public:
+    // what is done to every frame before it is broadcast
+    struct Transform {
+      double stationary_rotation = 0.0; // degrees
+      double rotation_rate = 0.0;       // rotations per second
+      bool flip = false;                // mirror left-right
+    };
+
     GelSource() = default;
     virtual ~GelSource() = default;
     
@@ -170,14 +182,34 @@ namespace Gel {
 
     // an inactive source ignores the ticks and broadcasts nothing.
     void set_active(bool active_) {
-      if (active_ && !active) on_activated();
+      if (active_ == active)
+        return;
       active = active_;
+      if (active)
+        on_activated();
+      else
+        on_deactivated();
     }
     bool is_active() const { return active; }
 
+    // the transformations, as set in the gel's configuration dialog.
+    virtual void set_transform(double stationary_rotation
+                               , double rotation_rate
+                               , bool flip) {
+      transform = Transform{stationary_rotation, rotation_rate, flip};
+    }
+    const Transform& get_transform() const { return transform; }
+
+    // Do the frames change by themselves over time? True for videos
+    // and cameras, false for still images. The scanner holds its
+    // slit still for the former and sweeps it across the latter.
+    virtual bool is_moving() const { return false; }
+
     // T Must be a derivate of GelSource
-    template <typename T>
-    static unique_ptr<GelSource> create() { return make_unique<T>(); }
+    template <typename T, typename... Args>
+    static unique_ptr<GelSource> create(Args&&... args) {
+      return make_unique<T>(std::forward<Args>(args)...);
+    }
     
   protected:
     // derived classes will use this to broadcast frames. The frame
@@ -187,11 +219,44 @@ namespace Gel {
       m_sig_next_frame.emit(frame, timestamp);
     }
 
-    // called when the source goes from inactive to active
+    // called when the source goes from inactive to active, and back
     virtual void on_activated() {}
+    virtual void on_deactivated() {}
+
+    // the rotation, in degrees, after `elapsed` seconds of playing
+    double angle_at(double elapsed) const {
+      return std::fmod(transform.stationary_rotation
+                       + 360.0 * transform.rotation_rate * elapsed
+                       , 360.0);
+    }
+
+    bool is_spinning() const { return transform.rotation_rate != 0.0; }
+
+    // The frame with the transformations applied. Hands back the
+    // very same frame if there is nothing to do, and otherwise
+    // always a fresh Mat, never touching the one passed in.
+    cv::Mat transformed(const cv::Mat& frame, double elapsed) const {
+      const double angle = angle_at(elapsed);
+      if (angle == 0.0 && !transform.flip)
+        return frame;
+
+      cv::Mat out;
+      if (transform.flip)
+        cv::flip(frame, out, 1);
+      else
+        out = frame;
+
+      if (angle != 0.0) {
+        cv::Mat rotated;
+        rotate(out, rotated, angle);
+        out = rotated;
+      }
+      return out;
+    }
 
   private:
     sig_next_frame m_sig_next_frame;
+    Transform transform;
     bool active = false;
   };
 }

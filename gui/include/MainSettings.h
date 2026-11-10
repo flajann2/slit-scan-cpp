@@ -11,10 +11,11 @@ namespace Gui {
       int slit_width; // Width of each slit
       int slit_spacing; // Space between slits
       double perspective_factor;
+      double sweep_rate; // of the slit across a still gel, in gel widths per second
     };
 
     MainSettings() {
-      main_settings = Settings(3, 0, 10.0); // TODO: semi-temporary. Load from yaml
+      main_settings = Settings(3, 0, 10.0, 0.05); // TODO: semi-temporary. Load from yaml
 
       auto builder = obtain_builder();
 
@@ -24,6 +25,7 @@ namespace Gui {
       main_width_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_width_e);
       main_spacing_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_spacing_e);
       main_factor_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_factor_e);
+      main_sweep_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_sweep_e);
 
       // Signals and slots
       main_settings_dialog->signal_close_request().connect(sigc::mem_fun(*this, &MainSettings::on_close), false);
@@ -35,6 +37,7 @@ namespace Gui {
       main_width_editor = make_unique<Gui::EntryEditor<int>>(main_settings.slit_width, main_width_e);
       main_spacing_editor = make_unique<Gui::EntryEditor<int>>(main_settings.slit_spacing, main_spacing_e);
       main_factor_editor = make_unique<Gui::EntryEditor<double>>(main_settings.perspective_factor, main_factor_e);
+      main_sweep_editor = make_unique<Gui::EntryEditor<double>>(main_settings.sweep_rate, main_sweep_e);
     }
 
   protected:
@@ -70,6 +73,8 @@ namespace Gui {
     unique_ptr<Gui::EntryEditor<int>> main_spacing_editor;
     shared_ptr<Gtk::Entry> main_factor_e;
     unique_ptr<Gui::EntryEditor<double>> main_factor_editor;
+    shared_ptr<Gtk::Entry> main_sweep_e;
+    unique_ptr<Gui::EntryEditor<double>> main_sweep_editor;
     
   public:
     //friend const MainSettings::Settings& obtain_main_settings(); 

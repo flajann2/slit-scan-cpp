@@ -14,6 +14,10 @@ namespace Gui {
   // This shall display a thumbnail and a dialog for configuration.
   // For instance, rotations, mirroring, or transformations during
   // the gel scan, etc.
+  //
+  // A gel is a still image, a video, or a camera. Each kind has its
+  // own kind of source, and the rest of the application only ever
+  // deals with the Gel::GelSource they have in common.
   class GelAsset : public Gtk::Box {
 
   public:
@@ -25,29 +29,91 @@ namespace Gui {
       , bottom // same question?
       , circular
     };
+
+    enum class Kind { image, video, camera };
     
     GelAsset(Placement place_ = Placement::undefined) : place(place_) {}
-    
+
+    // A gel from a file: an image if it can be read as one, and
+    // otherwise a video. Returns nothing if it is neither.
     static shared_ptr<Gui::GelAsset> create_gel_asset(std::string gel_pathname
                                                       , Placement place_ = Placement::undefined) {
       auto gel = make_shared<GelAsset>(place_);
-      gel->setup_gel_item(gel_pathname);
+      if (!gel->setup_from_file(gel_pathname)) {
+        cerr << "SlitScan: " << gel_pathname
+             << " is neither an image nor a video we can read." << endl;
+        return {};
+      }
+      return gel;
+    }
+
+    // A gel from a camera, live.
+    static shared_ptr<Gui::GelAsset> create_camera_asset(int index
+                                                         , Placement place_ = Placement::undefined) {
+      auto gel = make_shared<GelAsset>(place_);
+      gel->setup_from_camera(index);
       return gel;
     }
 
     auto get_placement() { return place; }
+    auto get_kind() { return kind; }
 
     // the source that broadcasts this gel's frames
-    Gel::ImageGelSource& source() { return m_source; }
+    Gel::GelSource& source() { return *gel_source; }
     
   protected:
-    void setup_gel_item(std::string gel_pathname) {
+    bool setup_from_file(std::string gel_pathname) {
       pathname = gel_pathname;
       cout << "pix: " << pathname << endl;
+
       gel = cv::imread(pathname, cv::IMREAD_COLOR);
-      cv::cvtColor(gel, gel, cv::COLOR_BGR2RGB);
+      if (!gel.empty()) {
+        kind = Kind::image;
+        cv::cvtColor(gel, gel, cv::COLOR_BGR2RGB);
+
+        auto image_source = make_unique<Gel::ImageGelSource>();
+        Gel::ImageGelSource::OneGel one;
+        one.frame = gel;
+        one.name = pathname;
+        one.load_time = Gel::time_basis::now();
+        one.meth = (place == Placement::right) ? Gel::ScanMeth::Right
+                                               : Gel::ScanMeth::Left;
+        image_source->set_gel(one);
+        gel_source = std::move(image_source);
+      } else {
+        // not an image, so perhaps a video. Its first frame
+        // stands in for it in the thumbnail and the preview.
+        gel = Gel::VideoGelSource::first_frame(pathname);
+        if (gel.empty())
+          return false;
+        kind = Kind::video;
+        gel_source = make_unique<Gel::VideoGelSource>(pathname);
+      }
+
+      setup_widgets();
+      return true;
+    }
+
+    void setup_from_camera(int index) {
+      kind = Kind::camera;
+      pathname = "camera " + std::to_string(index);
+
+      // We do not switch the camera on just to make a thumbnail,
+      // so a placeholder stands in for it.
+      gel = cv::Mat(thumb_height, thumb_width, CV_8UC3, cv::Scalar(40, 40, 40));
+      cv::putText(gel, "CAMERA " + std::to_string(index)
+                  , cv::Point(40, thumb_height / 2 + 15)
+                  , cv::FONT_HERSHEY_SIMPLEX, 1.6
+                  , cv::Scalar(230, 230, 230), 3, cv::LINE_AA);
+
+      gel_source = make_unique<Gel::CameraGelSource>(index);
+      setup_widgets();
+    }
+
+    void setup_widgets() {
       cv::resize(gel, mthumb
                  , cv::Size(thumb_width, thumb_height)
+                 , 0, 0
                  , cv::INTER_LINEAR);
       pixbuf = Gdk::Pixbuf::create_from_data(mthumb.data,
                                                   Gdk::Colorspace::RGB,
@@ -60,19 +126,12 @@ namespace Gui {
       thumbnail.set(pixbuf);      
       prepend(thumbnail);
       append(configuration);
+      set_tooltip_text(pathname);
 
+      // keep the source up to date with what is set in the
+      // configuration dialog.
       gel_config = GelConfig::create(gel, pathname);
       configuration.signal_clicked().connect(sigc::mem_fun(*this, &GelAsset::on_config_clicked));
-
-      // hand the gel to its source, and keep the source up to date
-      // with what is set in the configuration dialog.
-      Gel::ImageGelSource::OneGel one;
-      one.frame = gel;
-      one.name = pathname;
-      one.load_time = Gel::time_basis::now();
-      one.meth = (place == Placement::right) ? Gel::ScanMeth::Right
-                                             : Gel::ScanMeth::Left;
-      m_source.set_gel(one);
       gel_config->signal_changed().connect(sigc::mem_fun(*this, &GelAsset::on_config_changed));
       
       show();
@@ -86,17 +145,16 @@ namespace Gui {
     void on_config_changed() {
       // the dialog's rate is in degrees per second, the
       // source wants rotations per second.
-      m_source.set_transform(gel_config->get_angle()
-                             , gel_config->get_rate() / 360.0
-                             , gel_config->get_flip());
+      gel_source->set_transform(gel_config->get_angle()
+                                , gel_config->get_rate() / 360.0
+                                , gel_config->get_flip());
     }
     
   private:
     Placement place;
+    Kind kind = Kind::image;
 
-    // every gel asset is an image for now. Videos and cameras
-    // will want their own kind of source here.
-    Gel::ImageGelSource m_source;
+    unique_ptr<Gel::GelSource> gel_source;
     unique_ptr<Gui::GelConfig> gel_config;
 
     Gtk::Image thumbnail;
@@ -104,7 +162,10 @@ namespace Gui {
     Gtk::Button configuration;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
 
-    cv::Mat gel; // source image. All will be derived from this.
+    // source image. For an image, all will be derived from this.
+    // For a video it is the first frame, and for a camera a
+    // placeholder; those two are only for looking at.
+    cv::Mat gel;
     std::string pathname;
   };
 }

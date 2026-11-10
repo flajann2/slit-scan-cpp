@@ -21,6 +21,8 @@ namespace Gui {
 
       gel_left_button  = builder->get_object<Gtk::Button>(ss::main_gel_get_left);
       gel_right_button = builder->get_object<Gtk::Button>(ss::main_gel_get_right); 
+      cam_left_button  = builder->get_object<Gtk::Button>(ss::main_gel_cam_left);
+      cam_right_button = builder->get_object<Gtk::Button>(ss::main_gel_cam_right);
       gel_left_listbox  = builder->get_object<Gtk::ListBox>(ss::main_gel_list_left);
       gel_right_listbox = builder->get_object<Gtk::ListBox>(ss::main_gel_list_right);
       gel_chooser = builder->get_object<Gtk::FileChooserNative>(ss::file_gel_chooser);
@@ -48,6 +50,8 @@ namespace Gui {
 
       gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_left_gel));
       gel_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_right_gel));
+      cam_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_left_camera));
+      cam_right_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_right_camera));
       gel_chooser->signal_response().connect(sigc::mem_fun(*this, &GelSelection::on_chooser_response));
 
       toggle_play->  signal_toggled().connect(sigc::mem_fun(*this, &GelSelection::on_play_toggled));
@@ -58,12 +62,14 @@ namespace Gui {
       gel_left_listbox->signal_selected_rows_changed().connect(sigc::mem_fun(*this, &GelSelection::refresh_active_gels));
       gel_right_listbox->signal_selected_rows_changed().connect(sigc::mem_fun(*this, &GelSelection::refresh_active_gels));
 
-      // Gel Chooser filters
+      // Gel Chooser filters: images and videos
       filter = Gtk::FileFilter::create();
+      filter->set_name("Images and videos");
       filter->add_mime_type("image/jpeg");
       filter->add_mime_type("image/png");
       filter->add_mime_type("image/gif");
       filter->add_mime_type("image/webp");
+      filter->add_mime_type("video/*");
       gel_chooser->add_filter(filter);
     }
 
@@ -103,6 +109,44 @@ namespace Gui {
       gel_chooser->show();
     }
 
+    // The camera as a gel. It is the default camera, and one camera
+    // can only be opened once, so one camera gel is all there is.
+    void on_left_camera()  { add_camera(GelAsset::Placement::left); }
+    void on_right_camera() { add_camera(GelAsset::Placement::right); }
+
+    void add_camera(GelAsset::Placement place) {
+      for (auto& ga : assets) {
+        if (ga->get_kind() == GelAsset::Kind::camera) {
+          cout << "The camera is already a gel." << endl;
+          return;
+        }
+      }
+      add_asset(GelAsset::create_camera_asset(0, place));
+      refresh_active_gels();
+    }
+
+    // Puts a gel into its list and hooks its frames up to the scanner.
+    void add_asset(shared_ptr<Gui::GelAsset> ga) {
+      if (!ga)
+        return;
+
+      switch(ga->get_placement()) {
+      case GelAsset::Placement::left:
+        gel_left_listbox->append(*ga);
+        ga->source().signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_next_left_frame));
+        break;
+
+      case GelAsset::Placement::right:
+        gel_right_listbox->append(*ga);
+        ga->source().signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_next_right_frame));
+        break;
+
+      default:
+        return;
+      }
+      assets.push_back(ga);
+    }
+
     // What the scanner should be doing, from the global settings
     // and the video configuration.
     Gel::SlitScan::Params scan_params() {
@@ -115,7 +159,30 @@ namespace Gui {
       params.slit_width   = ms.slit_width;
       params.slit_spacing = ms.slit_spacing;
       params.perspective_factor = ms.perspective_factor;
+      params.sweep_rate = ms.sweep_rate;
+
+      // the slit sweeps across still images, and holds still for
+      // videos and cameras, which move by themselves.
+      auto active_left  = active_gel(GelAsset::Placement::left);
+      auto active_right = active_gel(GelAsset::Placement::right);
+      params.sweep_left  = !active_left  || !active_left->source().is_moving();
+      params.sweep_right = !active_right || !active_right->source().is_moving();
       return params;
+    }
+
+    // Where a recording goes: the path from the video configuration
+    // if there is one, and otherwise a new file, named for the
+    // time, in the user's Videos folder.
+    std::string recording_pathname(const VideoConfig::Configuration& vc) {
+      if (!vc.pathnname.empty())
+        return vc.pathnname;
+
+      std::string dir = Glib::get_user_special_dir(Glib::UserDirectory::VIDEOS);
+      if (dir.empty() || !Glib::file_test(dir, Glib::FileTest::IS_DIR))
+        dir = Glib::get_home_dir();
+
+      const auto stamp = Glib::DateTime::create_now_local().format("%Y%m%d-%H%M%S");
+      return Glib::build_filename(dir, "slitscan-" + stamp.raw() + "." + vc.format);
     }
 
     void on_play_toggled() {
@@ -175,7 +242,35 @@ namespace Gui {
       video_config_dialog->show();
     }
 
-    void on_record_toggled() { }
+    // REC records what the scanner produces, so there is only
+    // something to record while PLAY is on.
+    void on_record_toggled() {
+      if (!toggle_record->get_active()) {
+        if (slit_scan->is_recording()) {
+          slit_scan->stop_recording();
+          cout << "Recording finished: " << recording_to << endl;
+        }
+        return;
+      }
+
+      const auto& vc = VideoConfig::obtain_video_configiguration();
+      const auto params = scan_params();
+      const double fps = (vc.frames_per_sec > 0.0) ? vc.frames_per_sec : 30.0;
+      recording_to = recording_pathname(vc);
+
+      slit_scan->configure(params);
+      if (slit_scan->start_recording(recording_to
+                                     , fourcc_for_format(vc.format)
+                                     , fps
+                                     , cv::Size(params.width, params.height))) {
+        cout << "Recording to " << recording_to << endl;
+        toggle_record->set_tooltip_text("Recording to " + recording_to);
+      } else {
+        cerr << "SlitScan: cannot record to " << recording_to << endl;
+        toggle_record->set_tooltip_text("Could not record to " + recording_to);
+        toggle_record->set_active(false); // comes back through here, harmlessly
+      }
+    }
     
     void on_chooser_response(int r_id) {
       chosen_files.clear();
@@ -183,24 +278,13 @@ namespace Gui {
         // Get the selected folder path
         auto filelist = gel_chooser->get_files2();
         for (auto file : filelist) {
+          // nothing comes back if the file is neither an image nor a video
           auto ga = GelAsset::create_gel_asset(file->get_path(), current_place);
+          if (!ga)
+            continue;
 
-          switch(current_place) {
-          case GelAsset::Placement::left:
-            gel_left_listbox->append(*ga);
-            ga->source().signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_next_left_frame));
-            break;
-
-          case GelAsset::Placement::right:
-            gel_right_listbox->append(*ga);
-            ga->source().signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_next_right_frame));
-            break;
-            
-          default:
-            break;
-          }
+          add_asset(ga);
           chosen_files.push_back(file->get_path());
-          assets.push_back(ga);
         }
         refresh_active_gels();
       }
@@ -236,6 +320,7 @@ namespace Gui {
     Gel::IMasterTickServer ticker;
     bool playing = false;
     cv::Mat scan_frame; // the latest finished frame, for the canvas
+    std::string recording_to; // the file being recorded, or last recorded
 
     unique_ptr<Gui::MainSettings> main_settings_dialog;
     unique_ptr<Gui::VideoConfig> video_config_dialog;
@@ -247,6 +332,8 @@ namespace Gui {
     shared_ptr<Gtk::Button> main_settings_button;
     shared_ptr<Gtk::Button> gel_left_button;
     shared_ptr<Gtk::Button> gel_right_button;
+    shared_ptr<Gtk::Button> cam_left_button;
+    shared_ptr<Gtk::Button> cam_right_button;
     shared_ptr<Gtk::ListBox> gel_left_listbox;
     shared_ptr<Gtk::ListBox> gel_right_listbox;
     shared_ptr<Gtk::DrawingArea> canvas;

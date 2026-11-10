@@ -39,6 +39,15 @@ namespace Gui {
     return vec;
   }
 
+  // The codec to write each container with. These are the ones
+  // OpenCV's FFmpeg backend can be counted on to have.
+  inline int fourcc_for_format(const std::string& format) {
+    if (format == "avi")  return cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
+    if (format == "webm") return cv::VideoWriter::fourcc('V', 'P', '8', '0');
+    if (format == "ogg")  return cv::VideoWriter::fourcc('T', 'H', 'E', 'O');
+    return cv::VideoWriter::fourcc('m', 'p', '4', 'v'); // mp4, mov, mkv
+  }
+
   class VideoConfig : public Composition {
   public:
     struct Configuration {

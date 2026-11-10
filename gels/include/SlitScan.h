@@ -26,6 +26,9 @@
 //   + the slit can sweep across the frame. A still image needs
 //     that, or every slit would be the same.
 //
+// It can also record: the finished frames are written to a video
+// file as they are made.
+//
 // Threading: everything public is to be called from the GUI thread,
 // and never blocks. The work is done in one worker thread, which is
 // fed through a GelQueue and owns all of the scan state. Finished
@@ -52,9 +55,15 @@ namespace Gel {
       double slits_per_second = 30.0;   // slits cut per second of time
 
       // how fast the slit sweeps across the frame, in frame widths
-      // per second. It goes over and back. 0 holds the slit still in
-      // the centre, which is what you want for cameras and videos.
+      // per second. It goes over and back. 0 holds the slit still
+      // in the centre.
       double sweep_rate = 0.05;
+
+      // does the slit sweep at all, on each side? A still image
+      // needs it. For a video or a camera the picture moves by
+      // itself, and the slit is better held still in the centre.
+      bool sweep_left  = true;
+      bool sweep_right = true;
 
       // with gels on one side only, show them on both sides.
       bool mirror_missing_side = true;
@@ -73,6 +82,7 @@ namespace Gel {
       jobs.shutdown();
       if (worker_thread.joinable())
         worker_thread.join();
+      finish_recording(); // the worker is gone, so this is ours now
     }
 
     SlitScan(const SlitScan&) = delete;
@@ -115,6 +125,43 @@ namespace Gel {
       jobs.try_enqueue(std::move(job));
     }
 
+    // Starts writing the finished frames to a video file, one per
+    // tick. `fourcc` is the codec, as from cv::VideoWriter::fourcc().
+    // Frames of another size are scaled to `size`. Returns false,
+    // and records nothing, if the file cannot be opened for writing.
+    bool start_recording(const std::string& pathname
+                         , int fourcc
+                         , double fps
+                         , cv::Size size) {
+      auto writer = std::make_shared<cv::VideoWriter>();
+      try {
+        if (!writer->open(pathname, fourcc, fps, size, true) || !writer->isOpened())
+          return false;
+      } catch (const cv::Exception& e) {
+        cerr << "SlitScan: " << e.what() << endl;
+        return false;
+      }
+
+      Job job;
+      job.kind = Job::Kind::StartRecording;
+      job.writer = writer;
+      job.writer_size = size;
+      recording = jobs.enqueue(std::move(job)); // must not be dropped
+      return recording;
+    }
+
+    // Finishes the video file.
+    void stop_recording() {
+      if (!recording)
+        return;
+      Job job;
+      job.kind = Job::Kind::StopRecording;
+      jobs.enqueue(std::move(job)); // must not be dropped
+      recording = false;
+    }
+
+    bool is_recording() const { return recording; }
+
     // Wipes the strips and forgets the frames.
     void clear() {
       Job job;
@@ -149,12 +196,15 @@ namespace Gel {
 
   private:
     struct Job {
-      enum class Kind { Configure, Frame, Tick, Resume, Clear };
+      enum class Kind { Configure, Frame, Tick, Resume, Clear
+                        , StartRecording, StopRecording };
       Kind kind = Kind::Tick;
       Side side = Side::Left;
       cv::Mat frame;
       time_stamp ts;
       Params params;
+      std::shared_ptr<cv::VideoWriter> writer;
+      cv::Size writer_size;
     };
 
     // the scan state of one side. Worker thread only.
@@ -171,6 +221,7 @@ namespace Gel {
     sig_next_frame m_sig_next_frame;
     Params requested;
     bool configured = false;
+    bool recording = false;
 
     // ---- shared between the two threads
     GelQueue<Job> jobs;
@@ -188,6 +239,8 @@ namespace Gel {
     bool have_last_tick = false;
     time_stamp last_tick;
     double slit_debt = 0.0;     // fractional slits carried to the next tick
+    std::shared_ptr<cv::VideoWriter> writer; // set while recording
+    cv::Size writer_size;
 
     static Params sanitized(Params q) {
       q.width  = std::max(q.width, 2);
@@ -230,8 +283,36 @@ namespace Gel {
           slit_debt = 0.0;
           have_last_tick = false;
           break;
+
+        case Job::Kind::StartRecording:
+          finish_recording();
+          writer = job->writer;
+          writer_size = job->writer_size;
+          break;
+
+        case Job::Kind::StopRecording:
+          finish_recording();
+          break;
         }
       }
+    }
+
+    void finish_recording() {
+      if (writer) {
+        writer->release(); // writes out the end of the file
+        writer.reset();
+      }
+    }
+
+    // the video file wants BGR, at the size it was opened with.
+    void record(const cv::Mat& rgb) {
+      if (!writer)
+        return;
+      cv::Mat bgr;
+      cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
+      if (bgr.size() != writer_size)
+        cv::resize(bgr, bgr, writer_size, 0, 0, cv::INTER_AREA);
+      writer->write(bgr);
     }
 
     SideState& side_state(Side side) {
@@ -282,10 +363,10 @@ namespace Gel {
 
     // Where the left edge of the slit is, for a sweep phase. The
     // slit runs across the frame and back, one way per unit of phase.
-    int slit_x(int range, double phase) const {
+    int slit_x(int range, double phase, bool sweeps) const {
       if (range <= 0)
         return 0;
-      if (p.sweep_rate == 0.0)
+      if (!sweeps || p.sweep_rate == 0.0)
         return range / 2;
 
       double t = std::fmod(phase, 2.0);
@@ -307,11 +388,11 @@ namespace Gel {
       last_tick = tick;
       have_last_tick = true;
 
-      for (SideState* s : {&left, &right})
-        add_slits(*s, slits);
+      add_slits(left, slits, p.sweep_left);
+      add_slits(right, slits, p.sweep_right);
     }
 
-    void add_slits(SideState& s, int slits) {
+    void add_slits(SideState& s, int slits, bool sweeps) {
       if (slits <= 0 || s.frame.empty())
         return;
 
@@ -347,7 +428,7 @@ namespace Gel {
           break;
         const int w_dst = std::min(sw, wide - x_dst);
 
-        const int x_src = slit_x(s.frame.cols - src_w, s.phase - j * step);
+        const int x_src = slit_x(s.frame.cols - src_w, s.phase - j * step, sweeps);
         const cv::Mat slit = s.frame(cv::Rect(x_src, 0, src_w, s.frame.rows));
 
         if (slit.cols != sw || slit.rows != high)
@@ -391,6 +472,8 @@ namespace Gel {
         cv::flip(warped, mirrored, 1);
         mirrored.copyTo(out(cv::Rect(0, 0, half, p.height)));
       }
+
+      record(out);
 
       {
         lockguard lock(out_mutex);

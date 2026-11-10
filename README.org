@@ -1,7 +1,13 @@
-* SlitScan -- Application to create Slit-Scans like in 2001: A Space Odyssey
-  SlitScan is a powerful application to allow you to create
-  slit-scans either from gels or your attached web camera. You
-  can also do it from videos.
+#+STARTUP: inlineimages
+* SlitScan -- Application to create Slit-Scans like in 2001: A Space Odyssey  :TOC_7_gh:
+  - [[#background][Background]]
+  - [[#sources][Sources]]
+  - [[#types-of-slit-scanning][Types of slit-scanning]]
+  - [[#credits-copywrights-license][Credits, Copywrights, License]]
+- [[#documentation][Documentation]]
+
+** Background
+
 ** Sources
    + Gels
      Gels are series of images similar to the approach Douglass Trumbel
@@ -17,11 +23,11 @@
      Time-shifted video (or live) will be supported at a later date.
 ** Credits, Copywrights, License
    + MIT License
-   + Copywright 2024 Fred Mitchell
+   + Copyright 2026-2027 Fred Mitchell
    + Credit for the inspiration for this goes to Douglass Trumbel 
      for his awesome special effects long before CGI.
    + Credit goes to Authur C Clarke for the story, and to Stanly Kubrick for
      making this story for the big silver screen as the first serious SF
      film, which stands to this day.
 * Documentation
-
+  To be determined.

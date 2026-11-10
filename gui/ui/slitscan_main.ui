@@ -66,6 +66,11 @@
               </object>
             </child>
             <child>
+              <object class="GtkButton" id="ssb_main_gel_cam_left">
+                <property name="label">Left Camera</property>
+              </object>
+            </child>
+            <child>
               <object class="GtkListBox" id="ss_main_gel_list_left">
                 <property name="selection-mode">multiple</property>
               </object>
@@ -96,6 +101,11 @@
             <child>
               <object class="GtkButton" id="ssb_main_gel_get_right">
                 <property name="label">Right Gel Load</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="ssb_main_gel_cam_right">
+                <property name="label">Right Camera</property>
               </object>
             </child>
             <child>

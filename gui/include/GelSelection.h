@@ -276,15 +276,19 @@ namespace Gui {
       const double fps = (vc.frames_per_sec > 0.0) ? vc.frames_per_sec : 30.0;
       recording_to = recording_pathname(vc);
 
+      Gel::Recorder::Request request;
+      request.pathname = recording_to;
+      request.format = vc.format;
+      request.codec = vc.codec;
+      request.fps = fps;
+      request.size = cv::Size(params.width, params.height);
+
       slit_scan->configure(params);
-      if (slit_scan->start_recording(recording_to
-                                     , fourcc_for_format(vc.format)
-                                     , fps
-                                     , cv::Size(params.width, params.height))) {
-        recording_backend = slit_scan->recording_backend();
+      if (slit_scan->start_recording(request)) {
+        recording_how = slit_scan->recording_description();
         // REC with PLAY off is armed, but has nothing to record yet
         report_recording("Recording to " + recording_to
-                         + " (" + recording_backend + ")"
+                         + " as " + recording_how
                          + (playing ? "" : " -- nothing is recorded until PLAY is on"));
       } else {
         report_recording("Could not record to " + recording_to);
@@ -295,9 +299,17 @@ namespace Gui {
     // the recorder has closed a file
     void on_recording_finished(const Gel::Recorder::Result& result) {
       closing_recordings.erase(result.pathname);
-      if (result.frames > 0)
-        report_recording(std::format("Recorded {} frames to {}"
-                                     , result.frames, result.pathname));
+      if (result.frames > 0 && result.ok)
+        report_recording(std::format("Recorded {} frames to {} as {}"
+                                     , result.frames, result.pathname, result.how));
+      else if (result.frames > 0)
+        report_recording(std::format("The encoder ({}) failed; {} may be incomplete. "
+                                     "The terminal has the encoder's own words."
+                                     , result.how, result.pathname));
+      else if (!result.ok)
+        report_recording(std::format("The encoder ({}) failed and nothing was recorded. "
+                                     "The terminal has the encoder's own words."
+                                     , result.how));
       else
         report_recording("Nothing was recorded, so no file was kept. "
                          "REC records while PLAY is on.");
@@ -305,9 +317,8 @@ namespace Gui {
 
     void on_closing_overdue(const std::string& pathname) {
       if (closing_recordings.count(pathname))
-        report_recording("The video encoder (" + recording_backend
-                         + ") has still not closed " + pathname
-                         + ". The file may be incomplete.");
+        report_recording("The encoder (" + recording_how
+                         + ") is still busy closing " + pathname + ".");
     }
 
     // Says what the recording is doing: on the terminal, and as the
@@ -368,7 +379,7 @@ namespace Gui {
     bool playing = false;
     cv::Mat scan_frame; // the latest finished frame, for the canvas
     std::string recording_to; // the file being recorded, or last recorded
-    std::string recording_backend; // which OpenCV video backend writes it
+    std::string recording_how; // the codec and encoder writing it
     std::set<std::string> closing_recordings; // stopped, not yet closed
 
     unique_ptr<Gui::MainSettings> main_settings_dialog;

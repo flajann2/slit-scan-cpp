@@ -91,7 +91,9 @@
 	(8,13,"GtkComboBoxText","ss_video_p1_container",3,None,None,None,7,None,None),
 	(8,14,"GtkLabel",None,5,None,None,None,0,None,None),
 	(8,15,"GtkLabel",None,5,None,None,None,1,None,None),
-	(8,16,"GtkLabel","label_03",3,None,None,None,1,None,None)
+	(8,16,"GtkLabel","label_03",3,None,None,None,1,None,None),
+	(8,17,"GtkLabel","label_04",3,None,None,None,8,None,None),
+	(8,18,"GtkComboBoxText","ss_video_p1_codec",3,None,None,None,9,None,None)
   </object>
   <object_property>
 	(2,1,"GtkWidget","hexpand","True",None,None,None,None,None,None,None,None,None),
@@ -230,7 +232,8 @@
 	(8,12,"GtkLabel","label","FPS",0,None,None,None,None,None,None,None,None),
 	(8,14,"GtkLabel","label","The",None,None,None,None,None,None,None,None,None),
 	(8,15,"GtkLabel","label","Drink",None,None,None,None,None,None,None,None,None),
-	(8,16,"GtkLabel","label","File Format",None,None,None,None,None,None,None,None,None)
+	(8,16,"GtkLabel","label","File Format",None,None,None,None,None,None,None,None,None),
+	(8,17,"GtkLabel","label","Codec",None,None,None,None,None,None,None,None,None)
   </object_property>
   <object_layout_property>
 	(2,2,3,"GtkGridLayoutChild","column","0",None,None,None,None),
@@ -339,6 +342,12 @@
 	(8,3,13,"GtkGridLayoutChild","row","2",None,None,None,None),
 	(8,3,13,"GtkGridLayoutChild","row-span","1",None,None,None,None),
 	(8,3,16,"GtkGridLayoutChild","row","2",None,None,None,None),
+	(8,3,17,"GtkGridLayoutChild","column","0",None,None,None,None),
+	(8,3,17,"GtkGridLayoutChild","row","3",None,None,None,None),
+	(8,3,18,"GtkGridLayoutChild","column","1",None,None,None,None),
+	(8,3,18,"GtkGridLayoutChild","column-span","1",None,None,None,None),
+	(8,3,18,"GtkGridLayoutChild","row","3",None,None,None,None),
+	(8,3,18,"GtkGridLayoutChild","row-span","1",None,None,None,None),
 	(8,5,14,"GtkGridLayoutChild","column","0",None,None,None,None),
 	(8,5,14,"GtkGridLayoutChild","column-span","1",None,None,None,None),
 	(8,5,14,"GtkGridLayoutChild","row","0",None,None,None,None),
@@ -395,7 +404,12 @@
 	(8,13,"GtkComboBoxText",2,4,"mov",1,None,None,None,None),
 	(8,13,"GtkComboBoxText",2,5,"webm",1,None,None,None,None),
 	(8,13,"GtkComboBoxText",2,6,"mkv",1,None,None,None,None),
-	(8,13,"GtkComboBoxText",2,7,"ogg",1,None,None,None,None)
+	(8,13,"GtkComboBoxText",2,7,"ogg",1,None,None,None,None),
+	(8,18,"GtkComboBoxText",1,1,None,None,None,None,None,None),
+	(8,18,"GtkComboBoxText",2,2,"H.264",1,None,None,None,None),
+	(8,18,"GtkComboBoxText",2,3,"H.265 (HEVC)",1,None,None,None,None),
+	(8,18,"GtkComboBoxText",2,4,"VP9",1,None,None,None,None),
+	(8,18,"GtkComboBoxText",2,5,"AV1",1,None,None,None,None)
   </object_data>
   <object_data_arg>
 	(8,9,"GtkListStore",5,6,"id","1"),

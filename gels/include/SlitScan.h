@@ -138,14 +138,10 @@ namespace Gel {
     }
 
     // Starts writing the finished frames to a video file, one per
-    // tick. `fourcc` is the codec, as from cv::VideoWriter::fourcc().
-    // Frames of another size are scaled to `size`. Returns false,
-    // and records nothing, if the file cannot be opened for writing.
-    bool start_recording(const std::string& pathname
-                         , int fourcc
-                         , double fps
-                         , cv::Size size) {
-      return recorder.start(pathname, fourcc, fps, size);
+    // tick. Returns false, and records nothing, if the file cannot
+    // be written or no encoder can be had for it. See Recorder.h.
+    bool start_recording(const Recorder::Request& request) {
+      return recorder.start(request);
     }
 
     // No more frames for the video file. Returns at once, and never
@@ -156,8 +152,8 @@ namespace Gel {
 
     bool is_recording() { return recorder.is_recording(); }
 
-    // which of OpenCV's video backends is writing the recording
-    std::string recording_backend() { return recorder.backend(); }
+    // the codec and encoder the recording is being written with
+    std::string recording_description() { return recorder.description(); }
 
     // Emitted in the GUI thread when a recording's file has been
     // closed, with how many frames went into it.

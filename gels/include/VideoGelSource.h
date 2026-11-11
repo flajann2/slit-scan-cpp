@@ -10,7 +10,8 @@ namespace Gel {
   // the reading and keeps the latest frame, and on every tick the
   // GUI thread broadcasts whatever is the latest.
   //
-  // The reader thread only runs while the source is active.
+  // The reader thread only runs while the source is active, or
+  // while the configuration dialog is watching.
   class CaptureGelSource : public GelSource {
   public:
     ~CaptureGelSource() override { stop_reader(); }
@@ -19,6 +20,17 @@ namespace Gel {
 
     // true once the capture could not be opened or read
     bool has_failed() const { return failed; }
+
+    // the latest frame as it came, for the configuration dialog
+    cv::Mat preview_frame() override {
+      lockguard lock(frame_mutex);
+      return latest;
+    }
+
+    void set_previewing(bool on) override {
+      previewing = on;
+      update_reader();
+    }
 
     // BGR, grey or BGRA, as OpenCV hands frames out, to our RGB.
     // Always gives a fresh Mat.
@@ -48,12 +60,8 @@ namespace Gel {
       signal_tick().connect(sigc::mem_fun(*this, &CaptureGelSource::on_tick));
     }
 
-    void on_activated() override {
-      started = false;
-      start_reader();
-    }
-
-    void on_deactivated() override { stop_reader(); }
+    void on_activated() override { update_reader(); }
+    void on_deactivated() override { update_reader(); }
 
     // GUI thread
     void on_tick(time_stamp tick) {
@@ -68,15 +76,18 @@ namespace Gel {
       if (frame.empty())
         return;
 
-      if (!started) {
-        start_time = tick;
-        started = true;
-      }
-      broadcast_next_frame(transformed(frame, seconds_between(start_time, tick))
-                           , tick);
+      broadcast_next_frame(transformed(frame, tick), tick);
     }
 
   private:
+    // the reader runs for the scan, for the dialog, or for both
+    void update_reader() {
+      if (is_active() || previewing)
+        start_reader();
+      else
+        stop_reader();
+    }
+
     void start_reader() {
       if (running.exchange(true))
         return;
@@ -166,8 +177,7 @@ namespace Gel {
     cv::Mat latest;         // RGB
 
     // GUI thread only
-    bool started = false;
-    time_stamp start_time;
+    bool previewing = false; // the configuration dialog is watching
   };
 
   // A video file as a gel. It plays at its own frame rate, whatever

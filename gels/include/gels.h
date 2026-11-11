@@ -193,12 +193,59 @@ namespace Gel {
     bool is_active() const { return active; }
 
     // the transformations, as set in the gel's configuration dialog.
+    //
+    // The spin runs on the clock, whether or not anything is
+    // playing, so that the dialog and the scan show the same angle.
+    // Changing the rate carries on from the angle reached so far;
+    // the picture does not jump.
     virtual void set_transform(double stationary_rotation
                                , double rotation_rate
                                , bool flip) {
+      const auto now = time_basis::now();
+      spin_anchor = spin_at(now);
+      spin_anchor_time = now;
       transform = Transform{stationary_rotation, rotation_rate, flip};
     }
     const Transform& get_transform() const { return transform; }
+
+    bool is_spinning() const { return transform.rotation_rate != 0.0; }
+
+    // the rotation, in degrees, at a point in time: the stationary
+    // rotation and however far the spin has got.
+    double angle_at(time_stamp when) const {
+      return std::fmod(transform.stationary_rotation + spin_at(when), 360.0);
+    }
+    double angle_now() const { return angle_at(time_basis::now()); }
+
+    // For the configuration dialog: the latest frame as it comes,
+    // before any transformation. Empty if there is none to show.
+    virtual cv::Mat preview_frame() { return {}; }
+
+    // The dialog says when it is watching. Sources that have to be
+    // running to have frames to show (videos, cameras) run for it.
+    virtual void set_previewing(bool) {}
+
+    // The frame with the transformations applied, as of `when`.
+    // Hands back the very same frame if there is nothing to do, and
+    // otherwise always a fresh Mat, never touching the one passed in.
+    cv::Mat transformed(const cv::Mat& frame, time_stamp when) const {
+      const double angle = angle_at(when);
+      if (angle == 0.0 && !transform.flip)
+        return frame;
+
+      cv::Mat out;
+      if (transform.flip)
+        cv::flip(frame, out, 1);
+      else
+        out = frame;
+
+      if (angle != 0.0) {
+        cv::Mat rotated;
+        rotate(out, rotated, angle);
+        out = rotated;
+      }
+      return out;
+    }
 
     // Do the frames change by themselves over time? True for videos
     // and cameras, false for still images. The scanner holds its
@@ -223,40 +270,19 @@ namespace Gel {
     virtual void on_activated() {}
     virtual void on_deactivated() {}
 
-    // the rotation, in degrees, after `elapsed` seconds of playing
-    double angle_at(double elapsed) const {
-      return std::fmod(transform.stationary_rotation
-                       + 360.0 * transform.rotation_rate * elapsed
+    // how far the spin has got, in degrees
+    double spin_at(time_stamp when) const {
+      return std::fmod(spin_anchor
+                       + 360.0 * transform.rotation_rate
+                               * seconds_between(spin_anchor_time, when)
                        , 360.0);
-    }
-
-    bool is_spinning() const { return transform.rotation_rate != 0.0; }
-
-    // The frame with the transformations applied. Hands back the
-    // very same frame if there is nothing to do, and otherwise
-    // always a fresh Mat, never touching the one passed in.
-    cv::Mat transformed(const cv::Mat& frame, double elapsed) const {
-      const double angle = angle_at(elapsed);
-      if (angle == 0.0 && !transform.flip)
-        return frame;
-
-      cv::Mat out;
-      if (transform.flip)
-        cv::flip(frame, out, 1);
-      else
-        out = frame;
-
-      if (angle != 0.0) {
-        cv::Mat rotated;
-        rotate(out, rotated, angle);
-        out = rotated;
-      }
-      return out;
     }
 
   private:
     sig_next_frame m_sig_next_frame;
     Transform transform;
+    double spin_anchor = 0.0;  // degrees of spin at spin_anchor_time
+    time_stamp spin_anchor_time = time_basis::now();
     bool active = false;
   };
 }

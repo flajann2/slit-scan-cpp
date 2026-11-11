@@ -26,9 +26,16 @@ namespace Gel {
       double rotation_rate = 0.0;       // rotations per second      
     };
 
+    // a spinning image is turned afresh on every tick, in the GUI
+    // thread, so it is first brought down to this many pixels on
+    // its longer side. The scanner scales it to its own height
+    // anyway, and nothing bigger than this is ever needed there.
+    static constexpr int spin_size = 2160;
+
     void set_gel(const OneGel& gel_) {
       gel = gel_;
       cached.release();
+      spin_base.release();
       GelSource::set_transform(gel.stationary_rotation
                                , gel.rotation_rate
                                , get_transform().flip);
@@ -45,36 +52,38 @@ namespace Gel {
 
     const OneGel& get_gel() const { return gel; }
 
-  protected:
-    void on_activated() override { started = false; }
+    cv::Mat preview_frame() override { return gel.frame; }
 
+  protected:
     void on_tick(time_stamp tick) {
       if (!is_active() || gel.frame.empty())
         return;
 
-      // animations are based on elapsed time, not on a count of
-      // ticks, so a change of frame rate smooths rather than speeds up.
-      if (!started) {
-        start_time = tick;
-        started = true;
-      }
-
       // a stationary transformation only has to be computed once.
       if (!is_spinning()) {
         if (cached.empty())
-          cached = transformed(gel.frame, 0.0);
+          cached = transformed(gel.frame, tick);
         broadcast_next_frame(cached, tick);
         return;
       }
 
-      broadcast_next_frame(transformed(gel.frame, seconds_between(start_time, tick))
-                           , tick);
+      // the spin goes by the clock, not by a count of ticks, so a
+      // change of frame rate smooths rather than speeds up.
+      if (spin_base.empty()) {
+        const int longer = std::max(gel.frame.cols, gel.frame.rows);
+        if (longer > spin_size) {
+          const double scale = double(spin_size) / longer;
+          cv::resize(gel.frame, spin_base, cv::Size(), scale, scale, cv::INTER_AREA);
+        } else {
+          spin_base = gel.frame;
+        }
+      }
+      broadcast_next_frame(transformed(spin_base, tick), tick);
     }
     
   private:
     OneGel gel;
-    cv::Mat cached;   // transformed frame, when it does not change over time
-    bool started = false;
-    time_stamp start_time;
+    cv::Mat cached;    // transformed frame, when it does not change over time
+    cv::Mat spin_base; // the image at a size that can be turned every tick
   };
 }

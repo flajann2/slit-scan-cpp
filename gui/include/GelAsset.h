@@ -128,11 +128,12 @@ namespace Gui {
       append(configuration);
       set_tooltip_text(pathname);
 
-      // keep the source up to date with what is set in the
-      // configuration dialog.
-      gel_config = GelConfig::create(gel, pathname);
+      // The configuration dialog works on the source directly:
+      // what is set there is what the scanner gets. It opens on
+      // the page for this kind of gel.
+      gel_config = GelConfig::create(gel, pathname, *gel_source);
+      gel_config->set_page(kind == Kind::camera ? 1 : kind == Kind::video ? 2 : 0);
       configuration.signal_clicked().connect(sigc::mem_fun(*this, &GelAsset::on_config_clicked));
-      gel_config->signal_changed().connect(sigc::mem_fun(*this, &GelAsset::on_config_changed));
       
       show();
     }
@@ -141,19 +142,13 @@ namespace Gui {
       cout << "Config clicked. file " << pathname << endl;
       gel_config->show();
     }
-
-    void on_config_changed() {
-      // the dialog's rate is in degrees per second, the
-      // source wants rotations per second.
-      gel_source->set_transform(gel_config->get_angle()
-                                , gel_config->get_rate() / 360.0
-                                , gel_config->get_flip());
-    }
     
   private:
     Placement place;
     Kind kind = Kind::image;
 
+    // in this order: the dialog holds on to the source, so it is
+    // declared after it and goes away before it.
     unique_ptr<Gel::GelSource> gel_source;
     unique_ptr<Gui::GelConfig> gel_config;
 

@@ -157,6 +157,7 @@ namespace Gui {
       Gel::SlitScan::Params params;
       params.width  = vc.res_width;
       params.height = vc.res_height;
+      params.effect = vc.effect;
       params.slit_width   = ms.slit_width;
       params.slit_spacing = ms.slit_spacing;
       params.perspective_factor = ms.perspective_factor;

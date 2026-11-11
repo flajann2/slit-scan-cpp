@@ -30,6 +30,13 @@
 //     rounded positions, and the perspective is rendered by
 //     render_half() rather than by warpPerspective.
 //
+// The horizontal slit scan is the same thing lying on its side, and
+// that is just how it is made: the frames are transposed (rows for
+// columns) on the way in, everything in between works exactly as
+// for the vertical scan on a picture with its width and height
+// exchanged, and the finished picture is transposed back on the way
+// out. The left side of the scan comes out as the top.
+//
 // It can also record: the finished frames are handed to a Recorder,
 // which writes them to a video file in a thread of its own.
 //
@@ -38,6 +45,8 @@
 // fed through a GelQueue and owns all of the scan state. Finished
 // frames come back to the GUI thread by way of a Glib::Dispatcher.
 #pragma once
+
+#include <ScanEffect.h>
 
 #include <algorithm>
 #include <cmath>
@@ -52,6 +61,8 @@ namespace Gel {
     struct Params {
       int width  = 1280;                // size of the output frames
       int height = 800;
+
+      ScanEffect effect = ScanEffect::VerticalSlit; // which way the slit lies
 
       int slit_width   = 3;             // pixels, in the frame and in the strip
       int slit_spacing = 0;             // blank pixels between slits
@@ -267,7 +278,7 @@ namespace Gel {
 
     static Params sanitized(Params q) {
       q.width  = std::max(q.width, 2);
-      q.height = std::max(q.height, 1);
+      q.height = std::max(q.height, 2);
       q.slit_width   = std::max(q.slit_width, 1);
       q.slit_spacing = std::max(q.slit_spacing, 0);
       q.perspective_factor = std::max(q.perspective_factor, 1.0);
@@ -330,22 +341,33 @@ namespace Gel {
       return side == Side::Left ? left : right;
     }
 
+    // The scan is always worked out as a vertical one. For a
+    // horizontal scan that is done on the picture turned on its
+    // side, so its width is the picture's height and the other
+    // way about.
+    bool lying_flat() const { return p.effect == ScanEffect::HorizontalSlit; }
+    int scan_width() const  { return lying_flat() ? p.height : p.width; }
+    int scan_height() const { return lying_flat() ? p.width : p.height; }
+
     void apply_params(const Params& q) {
       const bool geometry_changed = !ready
         || q.width  != p.width
         || q.height != p.height
+        || q.effect != p.effect
         || q.slit_width   != p.slit_width
         || q.slit_spacing != p.slit_spacing;
       p = q;
 
-      const int half = p.width / 2;
+      // from here on everything is in the scan's own terms, which
+      // for a horizontal scan are the picture's turned on its side.
+      const int half = scan_width() / 2;
       const double w = half;
-      const double h = p.height;
+      const double h = scan_height();
 
       if (geometry_changed) {
         for (SideState* s : {&left, &right}) {
-          s->strip   = cv::Mat::zeros(p.height, half, CV_8UC3);
-          s->scratch = cv::Mat::zeros(p.height, half, CV_8UC3);
+          s->strip   = cv::Mat::zeros(scan_height(), half, CV_8UC3);
+          s->scratch = cv::Mat::zeros(scan_height(), half, CV_8UC3);
         }
         slit_debt = 0.0;
       }
@@ -369,7 +391,7 @@ namespace Gel {
         , cv::Point2f(0, float(h))
       };
       perspective = cv::getPerspectiveTransform(src_points, dst_points);
-      build_render_tables(half, p.height);
+      build_render_tables(half, scan_height());
 
       if (geometry_changed) {
         for (SideState* s : {&left, &right}) {
@@ -467,7 +489,8 @@ namespace Gel {
       add_slits(right, slits, p.sweep_right);
     }
 
-    // Scale the frame to the height of the strip, once per frame.
+    // Turn the frame the way the scan wants it, and scale it to the
+    // height of the strip. Once per frame.
     // Shrinking averages over the rows it drops (INTER_AREA);
     // plain interpolation there would alias.
     void prepare(SideState& s) {
@@ -475,11 +498,16 @@ namespace Gel {
       if (!s.prepared_stale && s.prepared.rows == high)
         return;
 
-      if (s.frame.rows == high)
-        s.prepared = s.frame;
+      // for a horizontal scan the frame goes in on its side
+      cv::Mat frame = s.frame;
+      if (lying_flat())
+        cv::transpose(s.frame, frame);
+
+      if (frame.rows == high)
+        s.prepared = frame;
       else
-        cv::resize(s.frame, s.prepared, cv::Size(s.frame.cols, high), 0, 0
-                   , (s.frame.rows > high) ? cv::INTER_AREA : cv::INTER_CUBIC);
+        cv::resize(frame, s.prepared, cv::Size(frame.cols, high), 0, 0
+                   , (frame.rows > high) ? cv::INTER_AREA : cv::INTER_CUBIC);
       s.prepared_stale = false;
     }
 
@@ -653,7 +681,9 @@ namespace Gel {
 
     // Build the output frame from the two strips and hand it over.
     void compose(time_stamp tick) {
-      const int half = p.width / 2;
+      const int wide = scan_width();
+      const int high = scan_height();
+      const int half = wide / 2;
       const SideState* r = &right;
       const SideState* l = &left;
       if (p.mirror_missing_side) {
@@ -662,12 +692,12 @@ namespace Gel {
       }
 
       // always a fresh Mat; the GUI may still be painting the last one.
-      cv::Mat out = cv::Mat::zeros(p.height, p.width, CV_8UC3);
+      cv::Mat out = cv::Mat::zeros(high, wide, CV_8UC3);
       cv::Mat warped;
 
       if (!r->frame.empty()) {
         render_half(r->strip, warped);
-        warped.copyTo(out(cv::Rect(p.width - half, 0, half, p.height)));
+        warped.copyTo(out(cv::Rect(wide - half, 0, half, high)));
       }
 
       if (!l->frame.empty()) {
@@ -675,7 +705,15 @@ namespace Gel {
           render_half(l->strip, warped);
         cv::Mat mirrored;
         cv::flip(warped, mirrored, 1);
-        mirrored.copyTo(out(cv::Rect(0, 0, half, p.height)));
+        mirrored.copyTo(out(cv::Rect(0, 0, half, high)));
+      }
+
+      // a horizontal scan was made on its side: stand it up again.
+      // Left becomes top and right becomes bottom.
+      if (lying_flat()) {
+        cv::Mat upright;
+        cv::transpose(out, upright);
+        out = upright;
       }
 
       recorder.write(out); // does nothing unless we are recording

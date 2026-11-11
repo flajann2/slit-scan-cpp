@@ -61,6 +61,7 @@ namespace ss {
   const std::string video_p1_fps             = "ss_video_p1_fps";
   const std::string video_p1_container       = "ss_video_p1_container";
   const std::string video_p1_codec           = "ss_video_p1_codec";
+  const std::string video_p2_effect          = "ss_video_p2_effect";
 
   const std::string video_config_p2          = "ss_video_config_p2";
 }

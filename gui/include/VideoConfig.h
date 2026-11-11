@@ -2,6 +2,7 @@
 #pragma once
 
 #include <VideoEncoding.h>
+#include <ScanEffect.h>
 
 namespace Gui {
 
@@ -50,6 +51,13 @@ namespace Gui {
     return vec;
   }
 
+  // ComboBox order must match
+  constexpr auto create_effect_list() {
+    std::array<Gel::ScanEffect, 2> vec {{   Gel::ScanEffect::VerticalSlit
+                                          , Gel::ScanEffect::HorizontalSlit }};
+    return vec;
+  }
+
   class VideoConfig : public Composition {
   public:
     struct Configuration {
@@ -60,10 +68,12 @@ namespace Gui {
       double frames_per_sec; // TODO: we have this defined in global settings.
       std::string format; // mp4, mkv, etc.
       Gel::VideoCodec codec; // what the video is encoded with
+      Gel::ScanEffect effect; // what the scanner makes of the gels
     };
     
     VideoConfig () {
-      video_configuration = {"", 1280, 800, 30, "mp4", Gel::VideoCodec::H264};
+      video_configuration = {"", 1280, 800, 30, "mp4", Gel::VideoCodec::H264
+                             , Gel::ScanEffect::VerticalSlit};
       auto builder = obtain_builder();
 
       // widgets
@@ -72,18 +82,21 @@ namespace Gui {
       vid_fps    = builder->get_object<Gtk::ComboBox>(ss::video_p1_fps);
       vid_format = builder->get_object<Gtk::ComboBox>(ss::video_p1_container);
       vid_codec  = builder->get_object<Gtk::ComboBox>(ss::video_p1_codec);
+      vid_effect = builder->get_object<Gtk::ComboBox>(ss::video_p2_effect);
 
       // set the initial (default) config to match with the initial config
       resolution->set_active(2); // 1280x800
       vid_fps->set_active(2);    // 30
       vid_format->set_active(0); // mp4
       vid_codec->set_active(0);  // H.264
+      vid_effect->set_active(0); // vertical slit scan
       
       // signals and slots
       resolution->signal_changed().connect(sigc::mem_fun(*this, &VideoConfig::on_resolution_changed));
       vid_fps->signal_changed().connect(   sigc::mem_fun(*this, &VideoConfig::on_fps_changed));
       vid_format->signal_changed().connect(sigc::mem_fun(*this, &VideoConfig::on_format_changed));
       vid_codec->signal_changed().connect( sigc::mem_fun(*this, &VideoConfig::on_codec_changed));
+      vid_effect->signal_changed().connect(sigc::mem_fun(*this, &VideoConfig::on_effect_changed));
     }
     
     static Configuration video_configuration;
@@ -94,6 +107,7 @@ namespace Gui {
     shared_ptr<Gtk::ComboBox> vid_fps;
     shared_ptr<Gtk::ComboBox> vid_format;
     shared_ptr<Gtk::ComboBox> vid_codec;
+    shared_ptr<Gtk::ComboBox> vid_effect;
 
     
     void on_resolution_changed() {
@@ -152,6 +166,20 @@ namespace Gui {
 
       if (!Gel::container_holds(video_configuration.format, video_configuration.codec))
         select_format(Gel::natural_container(video_configuration.codec));
+    }
+
+    // The effect takes hold at once, also while playing: the
+    // scanner picks the configuration up on its next tick.
+    void on_effect_changed() {
+      constexpr auto list = create_effect_list();
+      int row = vid_effect->get_active_row_number();
+      if (row < 0 || row >= int(list.size()))
+        return;
+      video_configuration.effect = list[row];
+
+      cout << "effect row: " << row << " as "
+           << Gel::scan_effect_name(video_configuration.effect)
+           << endl;
     }
 
     // Set a box to a value, if the box has it. Setting it runs the

@@ -22,7 +22,7 @@ namespace Gui {
     // At 1.0 that is plain RPM. Make it 2.0 and the same slider
     // setting turns the gel half as fast (revolutions per two
     // minutes); make it 0.5 and it turns twice as fast.
-    static constexpr double rate_minutes = 1.0;
+    static constexpr double rate_minutes = 5.0;
 
     // a slider setting as revolutions per second, which is what
     // the gel sources work in.

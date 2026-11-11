@@ -1,6 +1,9 @@
 // SlitScan main
 
 #include <main.h>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
 #include <Builder.h>
 //#include <hekate/hekate>
 
@@ -43,6 +46,23 @@ namespace Gel {
   MasterTickServer& obtain_master_tick_server() { return MasterTickServer::master_tick_server; }
 }
 
+// what the process exits with if the tidying up at the end hangs
+constexpr int result_when_stuck = 3;
+
 int main(int argc, char* argv[]) {
-  return SSA::ss_app.run(argc, argv);
+  const int result = SSA::ss_app.run(argc, argv);
+
+  // The window is closed. What remains is tidying up: stopping the
+  // threads, closing the camera, finishing a recording. All of
+  // that normally takes a moment. But should any of it get stuck,
+  // the process must not live on with no window to show for it,
+  // so it is given ten seconds and then shown the door.
+  std::thread([] {
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::cerr << "SlitScan: still tidying up ten seconds after the window "
+                 "closed; leaving anyway." << std::endl;
+    std::_Exit(result_when_stuck);
+  }).detach();
+
+  return result;
 }

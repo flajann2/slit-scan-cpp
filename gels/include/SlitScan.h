@@ -144,6 +144,7 @@ namespace Gel {
       job.frame = frame;
       job.ts = ts;
       job.gel = gel;
+      job.epoch = frame_epoch.load();
       jobs.try_enqueue(std::move(job)); // if we are swamped, drop it
     }
 
@@ -191,11 +192,24 @@ namespace Gel {
     // so it cannot be lost however busy the worker is; the job
     // only serves to wake a worker that has nothing else to do.
     void clear() {
+      ++frame_epoch; // frames still in the queue are from before
       clear_requested = true;
       {
         lockguard lock(out_mutex);
         out_frame.release(); // a frame on its way to the GUI is void
       }
+      Job job;
+      job.kind = Job::Kind::Clear;
+      jobs.try_enqueue(std::move(job));
+    }
+
+    // A side has no gel any more: forget its frame. What it has
+    // scanned so far stays where it is; with no frame the side is
+    // left out of the picture (or mirrored from the other side).
+    // Made the same way as clear(), and for the same reason.
+    void drop_side(Side side) {
+      ++frame_epoch; // frames still in the queue are from before
+      (side == Side::Left ? drop_left_requested : drop_right_requested) = true;
       Job job;
       job.kind = Job::Kind::Clear;
       jobs.try_enqueue(std::move(job));
@@ -248,7 +262,7 @@ namespace Gel {
       cv::Mat frame;
       time_stamp ts;
       Params params;
-      unsigned epoch = 0; // of a Tick: see discard_pending()
+      unsigned epoch = 0; // of a Tick: see discard_pending(); of a Frame: see clear()
       unsigned gel = 0;   // of a Frame: which gel it is from
     };
 
@@ -285,7 +299,10 @@ namespace Gel {
     // ---- shared between the two threads
     GelQueue<Job> jobs;
     std::atomic<unsigned> epoch{0}; // goes up each time playback stops
+    std::atomic<unsigned> frame_epoch{0};          // goes up with clear() and drop_side()
     std::atomic<bool> clear_requested{false};      // see clear()
+    std::atomic<bool> drop_left_requested{false};  // see drop_side()
+    std::atomic<bool> drop_right_requested{false};
     std::atomic<bool> pass_finished_left{false};  // set by the worker,
     std::atomic<bool> pass_finished_right{false}; // taken by the GUI
     std::mutex out_mutex; // guards out_frame and out_ts
@@ -333,6 +350,10 @@ namespace Gel {
       while (auto job = jobs.dequeue()) {
         if (clear_requested.exchange(false))
           wipe();
+        if (drop_left_requested.exchange(false))
+          forget_frame(left);
+        if (drop_right_requested.exchange(false))
+          forget_frame(right);
 
         switch (job->kind) {
         case Job::Kind::Configure:
@@ -344,6 +365,11 @@ namespace Gel {
           // is not a new frame. We hold a reference to the one we
           // have, so its pixels cannot have been freed and reused,
           // and the same address really is the same picture.
+          // sent before the scanner was cleared, or before its
+          // side lost its gel: it must not bring the old gel back.
+          if (job->epoch != frame_epoch.load())
+            break;
+
           SideState& s = side_state(job->side);
           if (job->frame.data != s.frame.data
               || job->frame.size() != s.frame.size()) {
@@ -379,6 +405,18 @@ namespace Gel {
           break; // done above; this job was only to wake us
         }
       }
+    }
+
+    // The side has no gel: no frame, and nothing to carry on from.
+    void forget_frame(SideState& s) {
+      s.frame.release();
+      s.prepared.release();
+      s.prepared_stale = true;
+      s.have_prev = false;
+      s.prev_column.release();
+      s.gel = 0;
+      s.pass_reported = false;
+      s.phase = 0.0;
     }
 
     // Back to how things were before the first frame.

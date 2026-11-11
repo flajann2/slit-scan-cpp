@@ -109,6 +109,45 @@ namespace Gui {
       show_defaults();
       video_configuration = defaults();
     }
+
+    // This is the configuration now, in the dialog as well. A value
+    // the dialog has no row for (a resolution it does not list,
+    // say) is left as it was, and named in `rejected`.
+    void set(const Configuration& wanted, std::vector<std::string>& rejected) {
+      // each box is set to the row that holds the value; setting it
+      // runs the box's handler, which sees to the configuration.
+      auto choose = [&](shared_ptr<Gtk::ComboBox>& box, int row, const std::string& what) {
+        if (row >= 0)
+          box->set_active(row);
+        else
+          rejected.push_back(what);
+      };
+      auto row_of = [](const auto& list, const auto& matches) {
+        for (int row = 0; row < int(list.size()); ++row)
+          if (matches(list[row]))
+            return row;
+        return -1;
+      };
+
+      choose(resolution
+             , row_of(create_resolution_list(), [&](const auto& r) {
+                 return r.first == wanted.res_width && r.second == wanted.res_height; })
+             , std::format("resolution {}x{}", wanted.res_width, wanted.res_height));
+      choose(vid_fps
+             , row_of(create_fps_list(), [&](int fps) { return fps == int(wanted.frames_per_sec); })
+             , std::format("{} frames per second", wanted.frames_per_sec));
+      choose(vid_format
+             , row_of(create_format_list(), [&](const char* f) { return wanted.format == f; })
+             , "file format " + wanted.format);
+      choose(vid_codec
+             , row_of(create_codec_list(), [&](Gel::VideoCodec c) { return c == wanted.codec; })
+             , std::string("codec ") + Gel::codec_name(wanted.codec));
+      choose(vid_effect
+             , row_of(create_effect_list(), [&](Gel::ScanEffect e) { return e == wanted.effect; })
+             , std::string("effect ") + Gel::scan_effect_name(wanted.effect));
+
+      video_configuration.pathnname = wanted.pathnname;
+    }
     
   protected:
     // the boxes at the rows that go with defaults()

@@ -32,7 +32,8 @@ namespace Gui {
 
     enum class Kind { image, video, camera };
     
-    GelAsset(Placement place_ = Placement::undefined) : place(place_) {}
+    GelAsset(Placement place_ = Placement::undefined) : place(place_)
+                                                      , id(++last_id) {}
 
     // A gel from a file: an image if it can be read as one, and
     // otherwise a video. Returns nothing if it is neither.
@@ -57,6 +58,24 @@ namespace Gui {
 
     auto get_placement() { return place; }
     auto get_kind() { return kind; }
+
+    // a gel can be moved to the other side
+    void set_placement(Placement place_) { place = place_; }
+
+    // a number of its own, to tell it from every other gel
+    unsigned get_id() const { return id; }
+
+    // where it came from: the full pathname of an image or a video
+    const std::string& get_pathname() const { return pathname; }
+
+    // for a camera, OpenCV's number for the device
+    int get_camera_index() const { return camera_index; }
+
+    // what is set in its configuration dialog
+    GelConfig& config() { return *gel_config; }
+
+    // emitted when the gel's remove button is clicked
+    sigc::signal<void()>& signal_remove_requested() { return m_sig_remove; }
 
     // the source that broadcasts this gel's frames
     Gel::GelSource& source() { return *gel_source; }
@@ -99,6 +118,7 @@ namespace Gui {
 
     void setup_from_camera(int index) {
       kind = Kind::camera;
+      camera_index = index;
       pathname = "camera " + std::to_string(index);
 
       // We do not switch the camera on just to make a thumbnail,
@@ -129,7 +149,17 @@ namespace Gui {
       thumbnail.set(pixbuf);      
       prepend(thumbnail);
       append(configuration);
+      append(remove_button);
       set_tooltip_text(pathname);
+
+      // the two buttons: the dialog, and out of the list
+      configuration.set_label("\u2699"); // a gear
+      configuration.set_tooltip_text("Rotate, spin or flip this gel");
+      remove_button.set_label("\u2715");  // a cross
+      remove_button.set_tooltip_text("Remove this gel");
+      remove_button.signal_clicked().connect([this] { m_sig_remove.emit(); });
+      configuration.set_valign(Gtk::Align::CENTER); // not stretched to the height of the row
+      remove_button.set_valign(Gtk::Align::CENTER);
 
       // The configuration dialog works on the source directly:
       // what is set there is what the scanner gets. It opens on
@@ -149,6 +179,11 @@ namespace Gui {
   private:
     Placement place;
     Kind kind = Kind::image;
+    int camera_index = 0;
+
+    const unsigned id;
+    static inline unsigned last_id = 0;
+    sigc::signal<void()> m_sig_remove;
 
     // in this order: the dialog holds on to the source, so it is
     // declared after it and goes away before it.
@@ -158,6 +193,7 @@ namespace Gui {
     Gtk::Image thumbnail;
     cv::Mat mthumb;
     Gtk::Button configuration;
+    Gtk::Button remove_button;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;
 
     // source image. For an image, all will be derived from this.

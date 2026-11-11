@@ -29,6 +29,8 @@ namespace Gui {
       canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
 
       toggle_play   = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_play);
+      restart_button = builder->get_object<Gtk::Button>(ss::main_restart);
+      main_window    = builder->get_object<Gtk::Window>(ss::main_window);
       video_setup   = builder->get_object<Gtk::Button>(ss::main_video_setup);
       toggle_record = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_record);
       
@@ -48,6 +50,16 @@ namespace Gui {
       main_save_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_save));
       main_save_as_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_save_as));
       main_new_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_new));
+      restart_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_restart));
+
+      // A gel dropped anywhere in a side's column, other than on
+      // another gel, goes to the end of that side's list. The
+      // column and not the list itself, because a list is only as
+      // tall as its gels: an empty one would be impossible to hit.
+      for (auto place : {GelAsset::Placement::left, GelAsset::Placement::right}) {
+        Gtk::Widget* column = listbox_of(place).get_parent();
+        add_drop_target(column ? *column : listbox_of(place), place, nullptr);
+      }
       main_settings_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_settings));
 
       gel_left_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_left_gel));
@@ -80,16 +92,202 @@ namespace Gui {
     static unique_ptr<GelSelection> create() { return make_unique<GelSelection>(); }
 
   protected:
+    // ---- Load, Save and Save as. A setup is everything there is to
+    // set: the settings, the video configuration, and the gels of
+    // both sides with what is set in their dialogs. It is kept in a
+    // YAML file; see Setup.h for what the file looks like.
+
     void on_load() {
       cout << "Load clicked." << endl;
+      choose_setup_file(Gtk::FileChooser::Action::OPEN, "Load a setup", "Load"
+                        , [this](const std::string& pathname) { load_setup(pathname); });
     }
 
+    // Save goes to the file the setup was loaded from or last saved
+    // to. A setup that has no file yet is asked for one.
     void on_save() {
       cout << "Save clicked." << endl;
+      if (setup_pathname.empty())
+        on_save_as();
+      else
+        save_setup(setup_pathname);
     }
 
     void on_save_as() {
       cout << "Save as clicked." << endl;
+      choose_setup_file(Gtk::FileChooser::Action::SAVE, "Save the setup as", "Save"
+                        , [this](std::string pathname) {
+                            // a setup file is a YAML file, and is called one
+                            if (!pathname.ends_with(".yaml") && !pathname.ends_with(".yml"))
+                              pathname += ".yaml";
+                            save_setup(pathname);
+                          });
+    }
+
+    // Asks the user for a setup file, and hands its full pathname
+    // to `then` if one was chosen.
+    void choose_setup_file(Gtk::FileChooser::Action action
+                           , const std::string& title
+                           , const std::string& accept
+                           , std::function<void(const std::string&)> then) {
+      setup_chooser = Gtk::FileChooserNative::create(title, *main_window, action, accept, "Cancel");
+
+      auto yaml = Gtk::FileFilter::create();
+      yaml->set_name("Slit Scan setups (*.yaml)");
+      yaml->add_pattern("*.yaml");
+      yaml->add_pattern("*.yml");
+      setup_chooser->add_filter(yaml);
+
+      if (action == Gtk::FileChooser::Action::SAVE)
+        setup_chooser->set_current_name(setup_pathname.empty()
+                                        ? "slitscan.yaml"
+                                        : Glib::path_get_basename(setup_pathname));
+
+      setup_chooser->signal_response().connect([this, then](int response) {
+        if (response == GTK_RESPONSE_ACCEPT) {
+          if (auto file = setup_chooser->get_file())
+            then(file->get_path());
+        }
+        setup_chooser.reset();
+      });
+      setup_chooser->show();
+    }
+
+    // The setup as it stands, gathered from the dialogs and the lists.
+    Setup current_setup() {
+      Setup setup;
+      setup.settings = obtain_main_settings();
+      setup.video = VideoConfig::obtain_video_configiguration();
+
+      for (auto place : {GelAsset::Placement::left, GelAsset::Placement::right}) {
+        auto& gels = (place == GelAsset::Placement::left) ? setup.left : setup.right;
+        for (auto& ga : gels_of(place)) {
+          Setup::GelEntry gel;
+          gel.kind = ga->get_kind();
+          if (gel.kind == GelAsset::Kind::camera)
+            gel.device = ga->get_camera_index();
+          else
+            gel.path = Glib::canonicalize_filename(ga->get_pathname()); // the full pathname
+          gel.rotate = ga->config().get_angle();
+          gel.rate = ga->config().get_rate();
+          gel.flip = ga->config().get_flip();
+          gels.push_back(gel);
+        }
+      }
+      return setup;
+    }
+
+    void save_setup(const std::string& pathname) {
+      try {
+        current_setup().save(pathname);
+        set_setup_pathname(pathname);
+        cout << "Saved the setup to " << pathname << endl;
+      } catch (const std::exception& e) {
+        tell_user("The setup was not saved.", e.what());
+      }
+    }
+
+    // Everything goes, and the setup in the file takes its place.
+    // A file that cannot be read at all leaves things as they are.
+    void load_setup(const std::string& pathname) {
+      Setup setup;
+      std::vector<std::string> notes; // what could not be had, for the user
+      try {
+        setup = Setup::load(pathname, notes);
+      } catch (const std::exception& e) {
+        tell_user("The setup was not loaded.", e.what());
+        return;
+      }
+
+      on_new();
+      main_settings_dialog->set(setup.settings);
+
+      std::vector<std::string> rejected;
+      video_config_dialog->set(setup.video, rejected);
+      for (const auto& what : rejected)
+        notes.push_back("No such choice here: " + what + ". The default is used.");
+
+      for (auto place : {GelAsset::Placement::left, GelAsset::Placement::right}) {
+        const auto& gels = (place == GelAsset::Placement::left) ? setup.left : setup.right;
+        for (const auto& gel : gels) {
+          shared_ptr<Gui::GelAsset> ga;
+          if (gel.kind == GelAsset::Kind::camera) {
+            if (has_camera()) {
+              notes.push_back("There can only be one camera gel; the second was left out.");
+              continue;
+            }
+            ga = GelAsset::create_camera_asset(gel.device, place);
+          } else {
+            ga = GelAsset::create_gel_asset(gel.path, place);
+            if (!ga) {
+              notes.push_back("Could not open the gel " + gel.path + "; it was left out.");
+              continue;
+            }
+          }
+          add_asset(ga);
+          ga->config().set_values(gel.rotate, gel.rate, gel.flip);
+        }
+      }
+      refresh_active_gels();
+      set_setup_pathname(pathname);
+      cout << "Loaded the setup from " << pathname << endl;
+
+      if (!notes.empty()) {
+        std::string detail;
+        for (const auto& note : notes)
+          detail += note + "\n";
+        tell_user("The setup was loaded, but not all of it.", detail);
+      }
+    }
+
+    // The file the setup belongs to, which Save writes to. Its name
+    // goes in the title of the window.
+    void set_setup_pathname(const std::string& pathname) {
+      setup_pathname = pathname;
+      main_window->set_title(pathname.empty()
+                             ? "Slit Scan"
+                             : "Slit Scan - " + Glib::path_get_basename(pathname));
+    }
+
+    // Something the user has to be told, in a dialog of its own and
+    // on the terminal.
+    void tell_user(const std::string& message, const std::string& detail) {
+      cerr << "SlitScan: " << message << " " << detail << endl;
+      auto dialog = Gtk::AlertDialog::create(message);
+      dialog->set_detail(detail);
+      dialog->show(*main_window);
+    }
+
+    // RESTART: the scan starts over, exactly as it began. The
+    // picture goes black, it is the turn of the first gel on each
+    // side again, videos go back to their first frame and spinning
+    // gels to where their spin started. The gels, the settings and
+    // PLAY itself are left as they are: if it was playing it goes
+    // straight on playing, from the top.
+    void on_restart() {
+      cout << "Restart clicked." << endl;
+
+      slit_scan->discard_pending(); // ticks still waiting are from the old run
+      slit_scan->clear();
+      for (auto& ga : assets)
+        ga->source().restart();
+      first_turns();
+
+      scan_frame.release();
+      canvas->queue_draw();
+      if (playing)
+        slit_scan->resume();
+      refresh_active_gels();
+    }
+
+    // It is the turn of the first gel on each side. The serials go
+    // on counting, as they must never repeat.
+    void first_turns() {
+      for (Turn* turn : {&left_turn, &right_turn}) {
+        turn->index = 0;
+        ++turn->serial;
+        turn->started = Gel::time_basis::now();
+      }
     }
 
     // New: everything as it was when the application started. The
@@ -114,8 +312,8 @@ namespace Gui {
       }
       assets.clear();
       chosen_files.clear();
-      left_turn = Turn{};
-      right_turn = Turn{};
+      first_turns();
+      set_setup_pathname("");
 
       slit_scan->clear();
       scan_frame.release();
@@ -152,40 +350,214 @@ namespace Gui {
     void on_left_camera()  { add_camera(GelAsset::Placement::left); }
     void on_right_camera() { add_camera(GelAsset::Placement::right); }
 
+    bool has_camera() {
+      for (auto& ga : assets)
+        if (ga->get_kind() == GelAsset::Kind::camera)
+          return true;
+      return false;
+    }
+
     void add_camera(GelAsset::Placement place) {
-      for (auto& ga : assets) {
-        if (ga->get_kind() == GelAsset::Kind::camera) {
-          cout << "The camera is already a gel." << endl;
-          return;
-        }
+      if (has_camera()) {
+        cout << "The camera is already a gel." << endl;
+        return;
       }
       add_asset(GelAsset::create_camera_asset(0, place));
       refresh_active_gels();
     }
 
-    // Puts a gel into its list and hooks its frames up to the scanner.
+    Gtk::ListBox& listbox_of(GelAsset::Placement place) {
+      return (place == GelAsset::Placement::left) ? *gel_left_listbox : *gel_right_listbox;
+    }
+
+    static Gel::SlitScan::Side side_of(GelAsset::Placement place) {
+      return (place == GelAsset::Placement::left) ? Gel::SlitScan::Side::Left
+                                                  : Gel::SlitScan::Side::Right;
+    }
+
+    // Puts a gel at the end of its list and hooks it up: its frames
+    // to the scanner, its remove button, and dragging.
     void add_asset(shared_ptr<Gui::GelAsset> ga) {
       if (!ga)
         return;
-
-      switch(ga->get_placement()) {
-      case GelAsset::Placement::left:
-        gel_left_listbox->append(*ga);
-        ga->source().signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_next_left_frame));
-        break;
-
-      case GelAsset::Placement::right:
-        gel_right_listbox->append(*ga);
-        ga->source().signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_next_right_frame));
-        break;
-
-      default:
+      if (ga->get_placement() != GelAsset::Placement::left
+          && ga->get_placement() != GelAsset::Placement::right)
         return;
-      }
+
+      listbox_of(ga->get_placement()).append(*ga);
+
+      // Which side a gel's frames are for is looked up when they
+      // come, not fixed here: a gel can be dragged to the other side.
+      GelAsset* gel = ga.get();
+      ga->source().signal_next_frame().connect(
+        sigc::bind(sigc::mem_fun(*this, &GelSelection::on_gel_frame), gel));
       // a video says when it has played through; see on_gel_finished()
       ga->source().signal_finished().connect(
-        sigc::bind(sigc::mem_fun(*this, &GelSelection::on_gel_finished), ga.get()));
+        sigc::bind(sigc::mem_fun(*this, &GelSelection::on_gel_finished), gel));
+      ga->signal_remove_requested().connect(
+        sigc::bind(sigc::mem_fun(*this, &GelSelection::remove_gel), gel));
+
+      // The gel can be picked up, and other gels dropped on it.
+      // What travels is just the gel's number, as text.
+      auto drag = Gtk::DragSource::create();
+      drag->set_actions(Gdk::DragAction::MOVE);
+      drag->signal_prepare().connect([gel](double, double) {
+        Glib::Value<Glib::ustring> value;
+        value.init(value.value_type());
+        value.set(drag_prefix + std::to_string(gel->get_id()));
+        return Gdk::ContentProvider::create(value);
+      }, false);
+      drag->signal_drag_begin().connect([drag, gel](const Glib::RefPtr<Gdk::Drag>&) {
+        drag->set_icon(Gtk::WidgetPaintable::create(*gel), 0, 0); // the gel itself under the pointer
+      });
+      ga->add_controller(drag);
+      add_drop_target(*ga, GelAsset::Placement::undefined, gel);
+
       assets.push_back(ga);
+    }
+
+    // what a dragged gel is called on its way
+    static inline const std::string drag_prefix = "slitscan-gel:";
+
+    // Lets gels be dropped on a widget. Dropped on another gel, the
+    // dragged one takes that gel's place in its list (`onto`);
+    // dropped on a list itself, it goes to the end of it (`place`).
+    void add_drop_target(Gtk::Widget& widget, GelAsset::Placement place, GelAsset* onto) {
+      auto drop = Gtk::DropTarget::create(G_TYPE_STRING, Gdk::DragAction::MOVE);
+      drop->signal_drop().connect([this, place, onto](const Glib::ValueBase& value, double, double) {
+        Glib::Value<Glib::ustring> text;
+        text.init(value.gobj());
+        const std::string what = text.get();
+        if (what.rfind(drag_prefix, 0) != 0)
+          return false; // some other text; not ours
+
+        GelAsset* dragged = nullptr;
+        for (auto& ga : assets)
+          if (std::to_string(ga->get_id()) == what.substr(drag_prefix.size()))
+            dragged = ga.get();
+        if (!dragged || dragged == onto)
+          return false;
+
+        if (onto)
+          move_gel(dragged, onto->get_placement(), position_of(onto));
+        else
+          move_gel(dragged, place, gels_of(place).size());
+        return true;
+      }, false);
+      widget.add_controller(drop);
+    }
+
+    // where a gel is in the list of its side, from the top
+    std::size_t position_of(GelAsset* gel) {
+      const auto gels = gels_of(gel->get_placement());
+      for (std::size_t i = 0; i < gels.size(); ++i)
+        if (gels[i].get() == gel)
+          return i;
+      return gels.size();
+    }
+
+    // Takes the gel's row out of its list, leaving the gel itself
+    // free to be put somewhere else. The list made the row when the
+    // gel was appended; taking out just the gel would leave an
+    // empty row behind.
+    void take_from_list(GelAsset* gel) {
+      if (auto* row = dynamic_cast<Gtk::ListBoxRow*>(gel->get_parent())) {
+        row->unset_child();
+        listbox_of(gel->get_placement()).remove(*row);
+      }
+    }
+
+    // After the gels of a side have changed, it should still be the
+    // turn of the gel it was (`was_active`), if that gel is still
+    // there. If it is not, the gel that now stands in its place has
+    // the turn, and a side left with no gels is taken out of the scan.
+    void settle_turn(GelAsset::Placement place, const shared_ptr<Gui::GelAsset>& was_active) {
+      const auto gels = gels_of(place);
+      Turn& turn = turn_of(place);
+
+      for (std::size_t i = 0; i < gels.size(); ++i) {
+        if (gels[i] == was_active) {
+          turn.index = i; // same gel, perhaps at another place in the list
+          return;
+        }
+      }
+      if (gels.empty()) {
+        turn.index = 0;
+        ++turn.serial;
+        slit_scan->drop_side(side_of(place));
+      } else {
+        begin_turn(place, turn.index % gels.size());
+      }
+    }
+
+    // Moves a gel to place number `position` of a side's list:
+    // within its own list, or across to the other one.
+    void move_gel(GelAsset* gel, GelAsset::Placement to, std::size_t position) {
+      shared_ptr<Gui::GelAsset> ga;
+      for (auto& candidate : assets)
+        if (candidate.get() == gel)
+          ga = candidate;
+      if (!ga)
+        return;
+
+      const auto from = ga->get_placement();
+      const auto active_left  = active_gel(GelAsset::Placement::left);
+      const auto active_right = active_gel(GelAsset::Placement::right);
+
+      // out of where it is ...
+      take_from_list(gel);
+      assets.remove(ga);
+
+      // ... and in at its new place. `assets` holds both sides in
+      // list order, so it goes in front of the gel now at that
+      // place on that side, or at the end if there is none.
+      ga->set_placement(to);
+      const auto there = gels_of(to);
+      position = std::min(position, there.size());
+      if (position < there.size())
+        assets.insert(std::find(assets.begin(), assets.end(), there[position]), ga);
+      else
+        assets.push_back(ga);
+      listbox_of(to).insert(*ga, int(position));
+
+      // The gel whose turn it was on each side keeps it. If that
+      // was the gel just moved to the other side, its old side
+      // goes on with the gel that stood below it.
+      settle_turn(GelAsset::Placement::left,  (from != to && active_left == ga)  ? nullptr : active_left);
+      settle_turn(GelAsset::Placement::right, (from != to && active_right == ga) ? nullptr : active_right);
+      refresh_active_gels();
+    }
+
+    // Takes a gel out altogether.
+    void remove_gel(GelAsset* gel) {
+      shared_ptr<Gui::GelAsset> ga;
+      for (auto& candidate : assets)
+        if (candidate.get() == gel)
+          ga = candidate;
+      if (!ga)
+        return;
+
+      const auto place = ga->get_placement();
+      const auto was_active = active_gel(place);
+      const auto position = position_of(gel);
+
+      ga->close_dialog();
+      ga->source().set_active(false);
+      take_from_list(gel);
+      assets.remove(ga);
+
+      // a gel above the one whose turn it is has gone: the turn
+      // moves up with the gels below it
+      Turn& turn = turn_of(place);
+      if (was_active != ga && position < turn.index)
+        --turn.index;
+      settle_turn(place, was_active == ga ? nullptr : was_active);
+      refresh_active_gels();
+
+      // The gel is gone from the lists now, but this is its own
+      // button's click we are in: let that finish before the gel
+      // itself goes.
+      Glib::signal_idle().connect_once([ga] {});
     }
 
     // What the scanner should be doing, from the global settings
@@ -487,14 +859,12 @@ namespace Gui {
       }
     }
 
-    // the serial of the turn goes with every frame, so that the
-    // scanner knows when it is looking at another gel.
-    void on_next_left_frame(const cv::Mat& frame, Gel::time_stamp ts) {
-      slit_scan->push_frame(Gel::SlitScan::Side::Left, frame, ts, left_turn.serial);
-    }
-    
-    void on_next_right_frame(const cv::Mat& frame, Gel::time_stamp ts) {
-      slit_scan->push_frame(Gel::SlitScan::Side::Right, frame, ts, right_turn.serial);
+    // A frame from a gel, for the side the gel is on. The serial of
+    // the turn goes with it, so that the scanner knows when it is
+    // looking at another gel.
+    void on_gel_frame(const cv::Mat& frame, Gel::time_stamp ts, GelAsset* gel) {
+      const auto place = gel->get_placement();
+      slit_scan->push_frame(side_of(place), frame, ts, turn_of(place).serial);
     }
 
     // a finished frame from the scanner
@@ -530,6 +900,10 @@ namespace Gui {
     unique_ptr<Gui::MainSettings> main_settings_dialog;
     unique_ptr<Gui::VideoConfig> video_config_dialog;
     
+    shared_ptr<Gtk::Window> main_window;
+    shared_ptr<Gtk::Button> restart_button;
+    Glib::RefPtr<Gtk::FileChooserNative> setup_chooser; // while the user is choosing
+    std::string setup_pathname; // the file this setup belongs to, if any
     shared_ptr<Gtk::Button> main_load_button;
     shared_ptr<Gtk::Button> main_save_button;
     shared_ptr<Gtk::Button> main_save_as_button;

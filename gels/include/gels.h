@@ -215,6 +215,14 @@ namespace Gel {
 
     bool is_spinning() const { return transform.rotation_rate != 0.0; }
 
+    // Back to the beginning, as if the source had only just been
+    // made: the spin starts again from its stationary angle, and a
+    // video (see CaptureGelSource) from its first frame.
+    virtual void restart() {
+      spin_anchor = 0.0;
+      spin_anchor_time = time_basis::now();
+    }
+
     // the rotation, in degrees, at a point in time: the stationary
     // rotation and however far the spin has got.
     double angle_at(time_stamp when) const {

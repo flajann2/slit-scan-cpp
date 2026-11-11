@@ -32,6 +32,16 @@ namespace Gel {
       update_reader();
     }
 
+    // A video goes back to its first frame. The reader thread does
+    // the rewinding, the next time round or when it next runs; in
+    // the meantime the frame we have is from before, so it goes.
+    void restart() override {
+      GelSource::restart();
+      rewind_requested = true;
+      lockguard lock(frame_mutex);
+      latest.release();
+    }
+
     // BGR, grey or BGRA, as OpenCV hands frames out, to our RGB.
     // Always gives a fresh Mat.
     static cv::Mat to_rgb(const cv::Mat& frame) {
@@ -133,6 +143,11 @@ namespace Gel {
       cv::Mat raw;
 
       while (running) {
+        if (is_file && rewind_requested.exchange(false)) {
+          capture.set(cv::CAP_PROP_POS_FRAMES, 0);
+          next_frame = time_basis::now();
+        }
+
         if (!capture.read(raw) || raw.empty()) {
           if (is_file && misses == 0) {
             // the end of the video: go round again
@@ -183,6 +198,7 @@ namespace Gel {
     std::atomic<bool> running{false};
     std::atomic<bool> failed{false};
     std::atomic<int> times_ended{0}; // how often a video has reached its end
+    std::atomic<bool> rewind_requested{false}; // see restart()
 
     std::mutex frame_mutex; // guards latest
     cv::Mat latest;         // RGB

@@ -15,6 +15,7 @@ namespace ss {
   
   const std::string main_gel_get_left = "ssb_main_gel_get_left";
   const std::string main_gel_get_right = "ssb_main_gel_get_right";
+  const std::string main_restart = "ssb_main_restart";
   const std::string main_gel_cam_left = "ssb_main_gel_cam_left";
   const std::string main_gel_cam_right = "ssb_main_gel_cam_right";
   const std::string main_gel_list_left = "ss_main_gel_list_left";

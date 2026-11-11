@@ -103,6 +103,20 @@ namespace Gui {
     double get_rate() const { return rate; }   // revolutions per rate_minutes
     bool get_flip() const { return flip; }
 
+    // Sets all three, in the dialog and on the source, as when a
+    // saved setup is loaded.
+    void set_values(double angle_, double rate_, bool flip_) {
+      gel_p1_rotate->set_value(angle_);
+      gel_p1_rate->set_value(rate_);
+      gel_p1_flip->set_active(flip_);
+
+      // what the sliders made of it (they keep to their ranges)
+      angle = gel_p1_rotate->get_value();
+      rate = gel_p1_rate->get_value();
+      flip = flip_;
+      apply();
+    }
+
     // emitted whenever one of the above changes
     sigc::signal<void()>& signal_changed() { return m_sig_changed; }
 

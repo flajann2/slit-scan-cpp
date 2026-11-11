@@ -44,8 +44,11 @@ namespace Gui {
     }
 
     // Back to the settings the application starts with.
-    void reset() {
-      main_settings = defaults();
+    void reset() { set(defaults()); }
+
+    // These are the settings now, in the dialog as well.
+    void set(const Settings& settings) {
+      main_settings = settings;
       show_settings();
     }
 

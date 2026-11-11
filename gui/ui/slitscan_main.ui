@@ -131,6 +131,11 @@
               </object>
             </child>
             <child>
+              <object class="GtkButton" id="ssb_main_restart">
+                <property name="label">RESTART</property>
+              </object>
+            </child>
+            <child>
               <object class="GtkButton" id="ss_main_video_setup">
                 <property name="label">Video
 Setup</property>

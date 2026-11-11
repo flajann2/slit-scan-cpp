@@ -28,6 +28,7 @@ namespace Gui {
       gel_left_listbox  = builder->get_object<Gtk::ListBox>(ss::main_gel_list_left);
       gel_right_listbox = builder->get_object<Gtk::ListBox>(ss::main_gel_list_right);
       gel_chooser = builder->get_object<Gtk::FileChooserNative>(ss::file_gel_chooser);
+      float_over_main_window(*gel_chooser);
       canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
 
       toggle_play   = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_play);
@@ -128,15 +129,16 @@ namespace Gui {
                           });
     }
 
-    // ---- Export and Import: a setup and all its gels in one zip
-    // file, to give to someone else. See SetupArchive.h.
+    // ---- Export and Import: a setup and all its gels in one file,
+    // to give to someone else. The file is a zip, and is called
+    // .hal. See SetupArchive.h.
 
     void on_export() {
       cout << "Export clicked." << endl;
       choose_setup_file(Gtk::FileChooser::Action::SAVE, "Export the setup and its gels", "Export"
                         , [this](std::string pathname) {
-                            if (!pathname.ends_with(".zip"))
-                              pathname += ".zip";
+                            if (!pathname.ends_with(SetupArchive::extension))
+                              pathname += SetupArchive::extension;
                             export_setup(pathname);
                           }
                         , true);
@@ -195,8 +197,11 @@ namespace Gui {
 
       auto filter = Gtk::FileFilter::create();
       if (zip) {
-        filter->set_name("Slit Scan setups with gels (*.zip)");
-        filter->add_pattern("*.zip");
+        filter->set_name("Slit Scan setups with gels (*.hal)");
+        filter->add_pattern("*" + SetupArchive::extension);
+        // a setup folder zipped by hand can be imported as well
+        if (action == Gtk::FileChooser::Action::OPEN)
+          filter->add_pattern("*.zip");
       } else {
         filter->set_name("Slit Scan setups (*.yaml)");
         filter->add_pattern("*.yaml");
@@ -209,7 +214,7 @@ namespace Gui {
         const std::string stem = setup_pathname.empty()
           ? "slitscan"
           : std::filesystem::path(setup_pathname).stem().string();
-        setup_chooser->set_current_name(stem + (zip ? ".zip" : ".yaml"));
+        setup_chooser->set_current_name(stem + (zip ? SetupArchive::extension : ".yaml"));
       }
 
       setup_chooser->signal_response().connect([this, then](int response) {

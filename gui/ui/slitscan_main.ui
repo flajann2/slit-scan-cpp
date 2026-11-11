@@ -42,13 +42,13 @@
             <child>
               <object class="GtkButton" id="ssb_main_import">
                 <property name="label">Import</property>
-                <property name="tooltip-text">Unpack a setup shared as a zip, with its gels, and load it</property>
+                <property name="tooltip-text">Unpack a shared setup (.hal), with its gels, and load it</property>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="ssb_main_export">
                 <property name="label">Export</property>
-                <property name="tooltip-text">Pack the setup and all its gels into a zip, to share</property>
+                <property name="tooltip-text">Pack the setup and all its gels into one .hal file, to share</property>
               </object>
             </child>
             <child>

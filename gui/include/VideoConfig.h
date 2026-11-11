@@ -83,6 +83,7 @@ namespace Gui {
 
       // widgets
       video_config_dialog = builder->get_object<Gtk::Dialog>(ss::video_config);
+      float_over_main_window(*video_config_dialog);
       resolution = builder->get_object<Gtk::ComboBox>(ss::video_p1_resolution);
       vid_fps    = builder->get_object<Gtk::ComboBox>(ss::video_p1_fps);
       vid_format = builder->get_object<Gtk::ComboBox>(ss::video_p1_container);

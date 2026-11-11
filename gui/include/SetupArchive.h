@@ -1,4 +1,8 @@
-// SetupArchive.h -- a setup and its gels in one zip file, for sharing.
+// SetupArchive.h -- a setup and its gels in one file, for sharing.
+//
+// The file is an ordinary zip, under the extension .hal. Anything
+// that opens zips opens it, once it is told to or the file is
+// renamed.
 //
 // Export packs a setup into a zip: the setup file as setup.yaml at
 // the top, and every gel it uses in a gels/ folder beside it. The
@@ -32,6 +36,9 @@ namespace Gui {
 
   class SetupArchive {
   public:
+    // what an exported setup's file name ends in
+    static inline const std::string extension = ".hal";
+
     // the name of the setup file inside an exported zip
     static inline const std::string setup_name = "setup.yaml";
     static inline const std::string gel_folder = "gels";

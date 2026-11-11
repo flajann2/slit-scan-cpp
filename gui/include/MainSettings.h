@@ -24,6 +24,7 @@ namespace Gui {
 
       // widgets
       main_settings_dialog = builder->get_object<Gtk::Dialog>(ss::main_settings);
+      float_over_main_window(*main_settings_dialog);
 
       main_width_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_width_e);
       main_spacing_e = builder->get_object<Gtk::Entry>(ss::main_settings_p1_spacing_e);

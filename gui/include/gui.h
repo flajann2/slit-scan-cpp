@@ -54,6 +54,8 @@ namespace Gui {
 // dependencies.
 #include <Builder.h>
 #include <WidgetNames.h>
+#include <Floating.h>
+#include <Splash.h>
 #include <EntryEditor.h>
 #include <VideoConfig.h>
 #include <MainSettings.h>

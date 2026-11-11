@@ -48,6 +48,9 @@ namespace Gui {
 
       // acquire widgets
       gel_config = builder->get_object<Gtk::Dialog>(ss::gel_config);
+      // over the application's main window, not the unused copy of
+      // it that came with our private builder
+      float_over_main_window(*gel_config);
 
       gel_note = builder->get_object<Gtk::Notebook>(ss::gel_config_note);
       gel_p1_rotate = builder->get_object<Gtk::Scale>(ss::gel_config_p1_rotate);

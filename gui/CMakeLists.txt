@@ -43,6 +43,10 @@ add_library(GuiLib STATIC
 
 target_link_libraries(GuiLib PRIVATE ${COMMON_LIBS})
 
+# libzip: Export and Import of setups
+pkg_check_modules(LIBZIP REQUIRED IMPORTED_TARGET libzip)
+target_link_libraries(GuiLib PRIVATE PkgConfig::LIBZIP)
+
 set(CAMBALACHE "/var/lib/flatpak/exports/bin/ar.xjuan.Cambalache")
 add_custom_command(
   OUTPUT ${CMBO} ${CREC}

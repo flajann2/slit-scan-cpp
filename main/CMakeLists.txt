@@ -27,3 +27,7 @@ link_directories(${GTK4_LIBRARY_DIRS} ${FREETYPE_LIBRARY_DIRS})
 target_link_libraries(slitscan PRIVATE
   GuiLib
   yaml-cpp::yaml-cpp)
+
+# libzip: Export and Import of setups
+pkg_check_modules(LIBZIP REQUIRED IMPORTED_TARGET libzip)
+target_link_libraries(slitscan PRIVATE PkgConfig::LIBZIP)

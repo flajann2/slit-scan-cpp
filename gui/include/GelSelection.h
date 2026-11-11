@@ -17,6 +17,8 @@ namespace Gui {
       main_save_button     = builder->get_object<Gtk::Button>(ss::b_main_save);
       main_save_as_button  = builder->get_object<Gtk::Button>(ss::b_main_save_as);
       main_new_button      = builder->get_object<Gtk::Button>(ss::b_main_new);
+      main_import_button   = builder->get_object<Gtk::Button>(ss::b_main_import);
+      main_export_button   = builder->get_object<Gtk::Button>(ss::b_main_export);
       main_settings_button = builder->get_object<Gtk::Button>(ss::b_main_settings);
 
       gel_left_button  = builder->get_object<Gtk::Button>(ss::main_gel_get_left);
@@ -50,6 +52,8 @@ namespace Gui {
       main_save_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_save));
       main_save_as_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_save_as));
       main_new_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_new));
+      main_import_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_import));
+      main_export_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_export));
       restart_button->signal_clicked().connect(sigc::mem_fun(*this, &GelSelection::on_restart));
 
       // A gel dropped anywhere in a side's column, other than on
@@ -124,24 +128,89 @@ namespace Gui {
                           });
     }
 
-    // Asks the user for a setup file, and hands its full pathname
-    // to `then` if one was chosen.
+    // ---- Export and Import: a setup and all its gels in one zip
+    // file, to give to someone else. See SetupArchive.h.
+
+    void on_export() {
+      cout << "Export clicked." << endl;
+      choose_setup_file(Gtk::FileChooser::Action::SAVE, "Export the setup and its gels", "Export"
+                        , [this](std::string pathname) {
+                            if (!pathname.ends_with(".zip"))
+                              pathname += ".zip";
+                            export_setup(pathname);
+                          }
+                        , true);
+    }
+
+    void on_import() {
+      cout << "Import clicked." << endl;
+      choose_setup_file(Gtk::FileChooser::Action::OPEN, "Import a setup", "Import"
+                        , [this](const std::string& pathname) { import_setup(pathname); }
+                        , true);
+    }
+
+    void export_setup(const std::string& zip_pathname) {
+      try {
+        SetupArchive::export_to(current_setup(), zip_pathname);
+        cout << "Exported the setup to " << zip_pathname << endl;
+        tell_user("The setup was exported.", zip_pathname);
+      } catch (const std::exception& e) {
+        tell_user("The setup was not exported.", e.what());
+      }
+    }
+
+    // Unpacks the zip into a folder of its own and loads the setup
+    // from there. Should the zip's own folder not be writable, the
+    // setup goes in "Slit Scan" in the user's documents.
+    void import_setup(const std::string& zip_pathname) {
+      std::string documents = Glib::get_user_special_dir(Glib::UserDirectory::DOCUMENTS);
+      if (documents.empty())
+        documents = Glib::get_home_dir();
+
+      std::string setup_file;
+      try {
+        setup_file = SetupArchive::import_from(zip_pathname
+                                               , std::filesystem::path(documents) / "Slit Scan");
+      } catch (const std::exception& e) {
+        tell_user("The setup was not imported.", e.what());
+        return;
+      }
+      cout << "Imported " << zip_pathname << " into "
+           << Glib::path_get_dirname(setup_file) << endl;
+
+      if (load_setup(setup_file))
+        tell_user("The setup was imported."
+                  , "It is in " + Glib::path_get_dirname(setup_file)
+                    + ", with its gels. Save keeps changes there.");
+    }
+
+    // Asks the user for a setup file -- or, with `zip`, a setup zip
+    // -- and hands its full pathname to `then` if one was chosen.
     void choose_setup_file(Gtk::FileChooser::Action action
                            , const std::string& title
                            , const std::string& accept
-                           , std::function<void(const std::string&)> then) {
+                           , std::function<void(const std::string&)> then
+                           , bool zip = false) {
       setup_chooser = Gtk::FileChooserNative::create(title, *main_window, action, accept, "Cancel");
 
-      auto yaml = Gtk::FileFilter::create();
-      yaml->set_name("Slit Scan setups (*.yaml)");
-      yaml->add_pattern("*.yaml");
-      yaml->add_pattern("*.yml");
-      setup_chooser->add_filter(yaml);
+      auto filter = Gtk::FileFilter::create();
+      if (zip) {
+        filter->set_name("Slit Scan setups with gels (*.zip)");
+        filter->add_pattern("*.zip");
+      } else {
+        filter->set_name("Slit Scan setups (*.yaml)");
+        filter->add_pattern("*.yaml");
+        filter->add_pattern("*.yml");
+      }
+      setup_chooser->add_filter(filter);
 
-      if (action == Gtk::FileChooser::Action::SAVE)
-        setup_chooser->set_current_name(setup_pathname.empty()
-                                        ? "slitscan.yaml"
-                                        : Glib::path_get_basename(setup_pathname));
+      if (action == Gtk::FileChooser::Action::SAVE) {
+        // named after the setup's own file, if it has one
+        const std::string stem = setup_pathname.empty()
+          ? "slitscan"
+          : std::filesystem::path(setup_pathname).stem().string();
+        setup_chooser->set_current_name(stem + (zip ? ".zip" : ".yaml"));
+      }
 
       setup_chooser->signal_response().connect([this, then](int response) {
         if (response == GTK_RESPONSE_ACCEPT) {
@@ -189,14 +258,15 @@ namespace Gui {
 
     // Everything goes, and the setup in the file takes its place.
     // A file that cannot be read at all leaves things as they are.
-    void load_setup(const std::string& pathname) {
+    // Returns whether the setup was loaded in full.
+    bool load_setup(const std::string& pathname) {
       Setup setup;
       std::vector<std::string> notes; // what could not be had, for the user
       try {
         setup = Setup::load(pathname, notes);
       } catch (const std::exception& e) {
         tell_user("The setup was not loaded.", e.what());
-        return;
+        return false;
       }
 
       on_new();
@@ -237,7 +307,9 @@ namespace Gui {
         for (const auto& note : notes)
           detail += note + "\n";
         tell_user("The setup was loaded, but not all of it.", detail);
+        return false;
       }
+      return true;
     }
 
     // The file the setup belongs to, which Save writes to. Its name
@@ -905,6 +977,8 @@ namespace Gui {
     Glib::RefPtr<Gtk::FileChooserNative> setup_chooser; // while the user is choosing
     std::string setup_pathname; // the file this setup belongs to, if any
     shared_ptr<Gtk::Button> main_load_button;
+    shared_ptr<Gtk::Button> main_import_button;
+    shared_ptr<Gtk::Button> main_export_button;
     shared_ptr<Gtk::Button> main_save_button;
     shared_ptr<Gtk::Button> main_save_as_button;
     shared_ptr<Gtk::Button> main_new_button;

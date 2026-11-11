@@ -25,7 +25,7 @@
 //   gels:
 //     left:
 //       - kind: image      # image, video, camera
-//         path: /home/me/gels/stripes.png
+//         path: gels/stripes.png
 //         rotate: 0        # degrees
 //         rate: 0          # revolutions per GelConfig::rate_minutes
 //         flip: false
@@ -33,11 +33,19 @@
 //         device: 0
 //     right: []
 //
+// A gel in the setup file's own folder, or below it, is written with
+// a path relative to that folder, and a relative path is read as
+// relative to it. So a folder holding a setup and its gels can be
+// moved, copied or shared as it is. A gel anywhere else is written
+// with its full pathname.
+//
 // Anything missing from a file takes its default, so files written
 // by an older version still load.
 #pragma once
 
+#include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 namespace Gui {
@@ -83,11 +91,37 @@ namespace Gui {
       return effect == Gel::ScanEffect::HorizontalSlit ? "horizontal" : "vertical";
     }
 
+    // ---- paths
+
+    // How a gel's path is written in a setup file kept in `folder`:
+    // relative to it if the gel is in it or below it, and otherwise
+    // in full. Always with forward slashes, which every system reads.
+    static std::string path_for_file(const std::string& path, const std::filesystem::path& folder) {
+      namespace fs = std::filesystem;
+      const fs::path gel(path);
+      if (gel.is_relative() || folder.empty())
+        return gel.generic_string();
+
+      const fs::path relative = gel.lexically_normal().lexically_relative(folder.lexically_normal());
+      if (relative.empty() || *relative.begin() == "..")
+        return gel.generic_string(); // somewhere else: in full
+      return relative.generic_string();
+    }
+
+    // and the other way: a path from a setup file kept in `folder`
+    static std::string path_from_file(const std::string& path, const std::filesystem::path& folder) {
+      namespace fs = std::filesystem;
+      const fs::path gel(path);
+      if (path.empty() || gel.is_absolute() || folder.empty())
+        return path;
+      return (folder / gel).lexically_normal().string();
+    }
+
     // ---- writing
 
-    // Writes the setup to a file. Throws std::runtime_error, with
-    // words fit for the user, if that cannot be done.
-    void save(const std::string& pathname) const {
+    // The setup as the text of a setup file that will be kept in
+    // `folder`.
+    std::string to_yaml(const std::filesystem::path& folder) const {
       YAML::Emitter out;
       out << YAML::BeginMap;
       out << YAML::Key << "slitscan" << YAML::Value << file_version;
@@ -118,7 +152,8 @@ namespace Gui {
           if (gel.kind == GelAsset::Kind::camera)
             out << YAML::Key << "device" << YAML::Value << gel.device;
           else
-            out << YAML::Key << "path" << YAML::Value << YAML::DoubleQuoted << gel.path;
+            out << YAML::Key << "path" << YAML::Value << YAML::DoubleQuoted
+                << path_for_file(gel.path, folder);
           out << YAML::Key << "rotate" << YAML::Value << gel.rotate;
           out << YAML::Key << "rate"   << YAML::Value << gel.rate;
           out << YAML::Key << "flip"   << YAML::Value << gel.flip;
@@ -129,8 +164,15 @@ namespace Gui {
       out << YAML::EndMap;
       out << YAML::EndMap;
 
-      std::ofstream file(pathname, std::ios::trunc);
-      file << "# Slit Scan setup\n" << out.c_str() << "\n";
+      return std::string("# Slit Scan setup\n") + out.c_str() + "\n";
+    }
+
+    // Writes the setup to a file. Throws std::runtime_error, with
+    // words fit for the user, if that cannot be done.
+    void save(const std::string& pathname) const {
+      const auto folder = std::filesystem::absolute(pathname).parent_path();
+      std::ofstream file(pathname, std::ios::trunc | std::ios::binary);
+      file << to_yaml(folder);
       file.close();
       if (!file)
         throw std::runtime_error("Could not write " + pathname);
@@ -153,6 +195,9 @@ namespace Gui {
       }
       if (!root.IsMap() || !root["slitscan"])
         throw std::runtime_error(pathname + " is not a Slit Scan setup.");
+
+      // relative gel paths are relative to the file's own folder
+      const auto folder = std::filesystem::absolute(pathname).parent_path();
 
       Setup setup;
       try {
@@ -204,7 +249,7 @@ namespace Gui {
               if (kind == "camera")     gel.kind = GelAsset::Kind::camera;
               else if (kind == "video") gel.kind = GelAsset::Kind::video;
               else                      gel.kind = GelAsset::Kind::image;
-              gel.path   = node["path"].as<std::string>("");
+              gel.path   = path_from_file(node["path"].as<std::string>(""), folder);
               gel.device = node["device"].as<int>(0);
               gel.rotate = node["rotate"].as<double>(0.0);
               gel.rate   = node["rate"].as<double>(0.0);

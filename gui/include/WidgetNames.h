@@ -11,6 +11,8 @@ namespace ss {
   const std::string b_main_save     = "ssb_main_save";
   const std::string b_main_save_as  = "ssb_main_save_as";
   const std::string b_main_new      = "ssb_main_new";
+  const std::string b_main_import   = "ssb_main_import";
+  const std::string b_main_export   = "ssb_main_export";
   const std::string b_main_settings = "ssb_main_settings";
   
   const std::string main_gel_get_left = "ssb_main_gel_get_left";

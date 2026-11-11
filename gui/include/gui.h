@@ -60,6 +60,7 @@ namespace Gui {
 #include <GelConfig.h>
 #include <GelAsset.h>
 #include <Setup.h>
+#include <SetupArchive.h>
 #include <GelSelection.h>
 #include <AppWindow.h>
 #include <Application.h>

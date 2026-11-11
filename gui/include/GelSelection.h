@@ -39,6 +39,7 @@ namespace Gui {
       slit_scan = make_unique<Gel::SlitScan>();
       slit_scan->signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_scan_frame));
       slit_scan->signal_recording_finished().connect(sigc::mem_fun(*this, &GelSelection::on_recording_finished));
+      slit_scan->signal_pass_finished().connect(sigc::mem_fun(*this, &GelSelection::on_pass_finished));
       canvas->set_draw_func(sigc::mem_fun(*this, &GelSelection::on_draw));
       ticker.signal_tick().connect(sigc::mem_fun(*this, &GelSelection::on_tick));
       
@@ -60,8 +61,10 @@ namespace Gui {
       toggle_record->signal_toggled().connect(sigc::mem_fun(*this, &GelSelection::on_record_toggled));
 
       // selecting a gel in a list makes it the one being scanned
-      gel_left_listbox->signal_selected_rows_changed().connect(sigc::mem_fun(*this, &GelSelection::refresh_active_gels));
-      gel_right_listbox->signal_selected_rows_changed().connect(sigc::mem_fun(*this, &GelSelection::refresh_active_gels));
+      gel_left_listbox->signal_selected_rows_changed().connect(
+        sigc::bind(sigc::mem_fun(*this, &GelSelection::on_gel_selected), GelAsset::Placement::left));
+      gel_right_listbox->signal_selected_rows_changed().connect(
+        sigc::bind(sigc::mem_fun(*this, &GelSelection::on_gel_selected), GelAsset::Placement::right));
 
       // Gel Chooser filters: images and videos
       filter = Gtk::FileFilter::create();
@@ -89,8 +92,42 @@ namespace Gui {
       cout << "Save as clicked." << endl;
     }
 
+    // New: everything as it was when the application started. The
+    // scan and the recording stop, the gels go, the picture goes,
+    // and the settings and the video configuration are back to
+    // what they start out as.
     void on_new() {
       cout << "New clicked." << endl;
+
+      toggle_record->set_active(false); // finishes a recording properly
+      toggle_play->set_active(false);
+
+      for (auto& ga : assets) {
+        ga->close_dialog();
+        // The list wrapped the gel in a row of its own making when
+        // it was appended. It is the row that has to go; taking
+        // out just the gel would leave an empty row behind.
+        auto& listbox = (ga->get_placement() == GelAsset::Placement::left) ? gel_left_listbox
+                                                                           : gel_right_listbox;
+        if (auto* row = ga->get_parent())
+          listbox->remove(*row);
+      }
+      assets.clear();
+      chosen_files.clear();
+      left_turn = Turn{};
+      right_turn = Turn{};
+
+      slit_scan->clear();
+      scan_frame.release();
+      canvas->queue_draw();
+
+      main_settings_dialog->reset();
+      video_config_dialog->reset();
+
+      recording_to.clear();
+      recording_how.clear();
+      Glib::signal_idle().connect_once(
+        sigc::track_obj([this] { toggle_record->set_tooltip_text(""); }, *this));
     }
 
     void on_settings() {
@@ -145,6 +182,9 @@ namespace Gui {
       default:
         return;
       }
+      // a video says when it has played through; see on_gel_finished()
+      ga->source().signal_finished().connect(
+        sigc::bind(sigc::mem_fun(*this, &GelSelection::on_gel_finished), ga.get()));
       assets.push_back(ga);
     }
 
@@ -169,6 +209,11 @@ namespace Gui {
       auto active_right = active_gel(GelAsset::Placement::right);
       params.sweep_left  = !active_left  || !active_left->source().is_moving();
       params.sweep_right = !active_right || !active_right->source().is_moving();
+
+      // with several gels on a side, the slit crosses each one
+      // once and then it is the next one's turn.
+      params.sequence_left  = gels_of(GelAsset::Placement::left).size() > 1;
+      params.sequence_right = gels_of(GelAsset::Placement::right).size() > 1;
       return params;
     }
 
@@ -199,6 +244,8 @@ namespace Gui {
 
         slit_scan->configure(scan_params());
         slit_scan->resume();
+        // the time a gel has had its turn for counts from now
+        left_turn.started = right_turn.started = Gel::time_basis::now();
         refresh_active_gels();
         ticker.set_interval(Gel::micros(static_cast<long long>(1000000.0 / fps)));
         ticker.start();
@@ -211,28 +258,119 @@ namespace Gui {
 
     // every tick, while playing. Picks up changes to the settings
     // as they are made; configure() does nothing if nothing changed.
-    void on_tick(Gel::time_stamp) {
-      if (playing)
-        slit_scan->configure(scan_params());
+    void on_tick(Gel::time_stamp tick) {
+      if (!playing)
+        return;
+      slit_scan->configure(scan_params());
+
+      // a gel that has no end of its own gets a fixed time
+      for (auto place : {GelAsset::Placement::left, GelAsset::Placement::right}) {
+        if (is_endless(active_gel(place))
+            && Gel::seconds_between(turn_of(place).started, tick) >= endless_gel_seconds)
+          next_gel(place);
+      }
     }
 
-    // The gel being scanned on a side: the first selected one in
-    // that side's list, or failing that the first one in the list.
+    // ---- Several gels on one side take turns, top to bottom and
+    // round again. Whose turn it is ends in one of three ways:
+    //
+    //   + a still image: the slit has crossed all of it (the
+    //     scanner says so; see on_pass_finished()).
+    //   + a video: it has played through (see on_gel_finished()).
+    //   + a camera, or a still image while the slit is not
+    //     sweeping: neither ever ends, so they get
+    //     endless_gel_seconds each (see on_tick()).
+    //
+    // Clicking a gel in its list makes it that gel's turn there and
+    // then, and the round carries on from it.
+
+    // how long a gel with no end of its own has, in seconds
+    static constexpr double endless_gel_seconds = 10.0;
+
+    // whose turn it is on a side
+    struct Turn {
+      std::size_t index = 0; // into the gels of that side, top to bottom
+      unsigned serial = 1;   // goes up with every change; tells the scanner the gels apart
+      Gel::time_stamp started = Gel::time_basis::now();
+    };
+
+    Turn& turn_of(GelAsset::Placement place) {
+      return (place == GelAsset::Placement::left) ? left_turn : right_turn;
+    }
+
+    // the gels of a side, in the order of its list
+    std::vector<shared_ptr<Gui::GelAsset>> gels_of(GelAsset::Placement place) {
+      std::vector<shared_ptr<Gui::GelAsset>> gels;
+      for (auto& ga : assets)
+        if (ga->get_placement() == place)
+          gels.push_back(ga);
+      return gels;
+    }
+
+    // The gel being scanned on a side: the one whose turn it is.
     shared_ptr<Gui::GelAsset> active_gel(GelAsset::Placement place) {
+      const auto gels = gels_of(place);
+      if (gels.empty())
+        return {};
+      return gels[turn_of(place).index % gels.size()];
+    }
+
+    // does this gel go on for ever, as far as taking turns goes?
+    bool is_endless(const shared_ptr<Gui::GelAsset>& ga) {
+      if (!ga)
+        return false;
+      switch (ga->get_kind()) {
+      case GelAsset::Kind::camera: return true;
+      case GelAsset::Kind::video:  return false;
+      default:                     return obtain_main_settings().sweep_rate == 0.0;
+      }
+    }
+
+    // It is the turn of gel number `index` on a side.
+    void begin_turn(GelAsset::Placement place, std::size_t index) {
+      Turn& turn = turn_of(place);
+      turn.index = index;
+      ++turn.serial;
+      turn.started = Gel::time_basis::now();
+      refresh_active_gels();
+    }
+
+    // On to the next gel of a side, and from the last one back to
+    // the first. With a single gel there is nowhere to go.
+    void next_gel(GelAsset::Placement place) {
+      const auto count = gels_of(place).size();
+      if (count > 1)
+        begin_turn(place, (turn_of(place).index + 1) % count);
+    }
+
+    // the slit has crossed the whole of a still image
+    void on_pass_finished(Gel::SlitScan::Side side) {
+      if (playing)
+        next_gel(side == Gel::SlitScan::Side::Left ? GelAsset::Placement::left
+                                                   : GelAsset::Placement::right);
+    }
+
+    // a video has played through
+    void on_gel_finished(GelAsset* ga) {
+      const auto place = ga->get_placement();
+      if (playing && active_gel(place).get() == ga)
+        next_gel(place);
+    }
+
+    // the user clicked a gel in a list: its turn, now
+    void on_gel_selected(GelAsset::Placement place) {
       auto& listbox = (place == GelAsset::Placement::left) ? gel_left_listbox
                                                            : gel_right_listbox;
-      shared_ptr<Gui::GelAsset> first;
-      for (auto& ga : assets) {
-        if (ga->get_placement() != place)
-          continue;
-        if (!first)
-          first = ga;
-        for (auto* row : listbox->get_selected_rows()) {
-          if (row && row->get_child() == ga.get())
-            return ga;
+      const auto gels = gels_of(place);
+      for (auto* row : listbox->get_selected_rows()) {
+        for (std::size_t i = 0; i < gels.size(); ++i) {
+          if (row && row->get_child() == gels[i].get()) {
+            if (i != turn_of(place).index % gels.size())
+              begin_turn(place, i);
+            return;
+          }
         }
       }
-      return first;
     }
 
     // Only the active gels broadcast frames, and only while playing.
@@ -349,16 +487,20 @@ namespace Gui {
       }
     }
 
+    // the serial of the turn goes with every frame, so that the
+    // scanner knows when it is looking at another gel.
     void on_next_left_frame(const cv::Mat& frame, Gel::time_stamp ts) {
-      slit_scan->push_frame(Gel::SlitScan::Side::Left, frame, ts);
+      slit_scan->push_frame(Gel::SlitScan::Side::Left, frame, ts, left_turn.serial);
     }
     
     void on_next_right_frame(const cv::Mat& frame, Gel::time_stamp ts) {
-      slit_scan->push_frame(Gel::SlitScan::Side::Right, frame, ts);
+      slit_scan->push_frame(Gel::SlitScan::Side::Right, frame, ts, right_turn.serial);
     }
 
     // a finished frame from the scanner
     void on_scan_frame(const cv::Mat& frame, Gel::time_stamp) {
+      if (!playing)
+        return; // a straggler from before PLAY went off, or New was clicked
       scan_frame = frame;
       canvas->queue_draw();
     }
@@ -379,6 +521,8 @@ namespace Gui {
     Gel::IMasterTickServer ticker;
     bool playing = false;
     cv::Mat scan_frame; // the latest finished frame, for the canvas
+    Turn left_turn;     // whose turn it is among the left gels
+    Turn right_turn;    //                       and the right
     std::string recording_to; // the file being recorded, or last recorded
     std::string recording_how; // the codec and encoder writing it
     std::set<std::string> closing_recordings; // stopped, not yet closed

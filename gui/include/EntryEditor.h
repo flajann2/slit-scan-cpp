@@ -22,25 +22,35 @@ namespace Gui {
       entry_buffer->set_text(format("{}", field));
     }
     
+    // Show what the field holds. For when the field was changed
+    // behind our back, or to throw away something half typed.
+    void refresh() {
+      entry_buffer->set_text(format("{}", field));
+    }
+
   protected:
+    // The whole of the text has to be a number: "12abc" is not 12.
     T from_string(const std::string_view& str) {
       T result;
       auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-      if (ec != std::errc{}) {
+      if (ec != std::errc{} || ptr != str.data() + str.size()) {
         throw std::runtime_error("Conversion failed");
       }
       return result;
     }
-    
+
+    // Every keystroke comes through here. What is typed takes hold
+    // as soon as it is a number. While it is not one -- the box is
+    // empty, or holds just a minus sign, on the way to a new value
+    // -- the field keeps what it had and the box is marked, but the
+    // text is left alone so that the typing can go on.
     void on_change() {
+      const std::string text = entry->get_text();
       try {
-        field = from_string(entry->get_text().c_str());
+        field = from_string(text);
+        entry->remove_css_class("error");
       } catch (const exception& e) {
-        cout << e.what() << endl;
-        // TODO: this simply reverts the field
-        // TODO: back to the original value. We
-        // TODO: do a better job of handling this.
-        entry_buffer->set_text(format("{}", field));
+        entry->add_css_class("error");
       }
       cout << "on_change() -> " << field << endl;
     }

@@ -180,6 +180,11 @@ namespace Gel {
     
     sig_next_frame& signal_next_frame() { return m_sig_next_frame;  }
 
+    // Emitted, in the GUI thread, each time the source has shown
+    // all it has and starts over: a video reaching its end. Still
+    // images and cameras have no end and never emit it.
+    sigc::signal<void()>& signal_finished() { return m_sig_finished; }
+
     // an inactive source ignores the ticks and broadcasts nothing.
     void set_active(bool active_) {
       if (active_ == active)
@@ -266,6 +271,9 @@ namespace Gel {
       m_sig_next_frame.emit(frame, timestamp);
     }
 
+    // derived classes will use this to say they have been through once.
+    void announce_finished() { m_sig_finished.emit(); }
+
     // called when the source goes from inactive to active, and back
     virtual void on_activated() {}
     virtual void on_deactivated() {}
@@ -280,6 +288,7 @@ namespace Gel {
 
   private:
     sig_next_frame m_sig_next_frame;
+    sigc::signal<void()> m_sig_finished;
     Transform transform;
     double spin_anchor = 0.0;  // degrees of spin at spin_anchor_time
     time_stamp spin_anchor_time = time_basis::now();

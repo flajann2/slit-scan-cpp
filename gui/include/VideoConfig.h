@@ -71,9 +71,14 @@ namespace Gui {
       Gel::ScanEffect effect; // what the scanner makes of the gels
     };
     
+    // what the configuration is when the application starts
+    static Configuration defaults() {
+      return {"", 1280, 800, 30, "mp4", Gel::VideoCodec::H264
+              , Gel::ScanEffect::VerticalSlit};
+    }
+
     VideoConfig () {
-      video_configuration = {"", 1280, 800, 30, "mp4", Gel::VideoCodec::H264
-                             , Gel::ScanEffect::VerticalSlit};
+      video_configuration = defaults();
       auto builder = obtain_builder();
 
       // widgets
@@ -85,11 +90,7 @@ namespace Gui {
       vid_effect = builder->get_object<Gtk::ComboBox>(ss::video_p2_effect);
 
       // set the initial (default) config to match with the initial config
-      resolution->set_active(2); // 1280x800
-      vid_fps->set_active(2);    // 30
-      vid_format->set_active(0); // mp4
-      vid_codec->set_active(0);  // H.264
-      vid_effect->set_active(0); // vertical slit scan
+      show_defaults();
       
       // signals and slots
       resolution->signal_changed().connect(sigc::mem_fun(*this, &VideoConfig::on_resolution_changed));
@@ -100,8 +101,25 @@ namespace Gui {
     }
     
     static Configuration video_configuration;
+
+    // Back to the configuration the application starts with.
+    // Setting the boxes runs their handlers, which see to the
+    // configuration itself.
+    void reset() {
+      show_defaults();
+      video_configuration = defaults();
+    }
     
   protected:
+    // the boxes at the rows that go with defaults()
+    void show_defaults() {
+      resolution->set_active(2); // 1280x800
+      vid_fps->set_active(2);    // 30
+      vid_format->set_active(0); // mp4
+      vid_codec->set_active(0);  // H.264
+      vid_effect->set_active(0); // vertical slit scan
+    }
+
     shared_ptr<Gtk::Dialog> video_config_dialog;
     shared_ptr<Gtk::ComboBox> resolution;
     shared_ptr<Gtk::ComboBox> vid_fps;

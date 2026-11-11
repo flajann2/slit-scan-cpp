@@ -68,6 +68,15 @@ namespace Gel {
       if (!is_active())
         return;
 
+      // the reader came to the end of the video and went round again
+      const int ended_now = times_ended.load();
+      if (ended_now != times_ended_seen) {
+        times_ended_seen = ended_now;
+        announce_finished();
+        if (!is_active())
+          return; // whoever heard that has moved on to another gel
+      }
+
       cv::Mat frame;
       {
         lockguard lock(frame_mutex);
@@ -129,6 +138,7 @@ namespace Gel {
             // the end of the video: go round again
             capture.set(cv::CAP_PROP_POS_FRAMES, 0);
             ++misses;
+            ++times_ended;
             continue;
           }
           if (++misses > 200) {
@@ -172,12 +182,14 @@ namespace Gel {
     std::thread reader_thread;
     std::atomic<bool> running{false};
     std::atomic<bool> failed{false};
+    std::atomic<int> times_ended{0}; // how often a video has reached its end
 
     std::mutex frame_mutex; // guards latest
     cv::Mat latest;         // RGB
 
     // GUI thread only
     bool previewing = false; // the configuration dialog is watching
+    int times_ended_seen = 0;
   };
 
   // A video file as a gel. It plays at its own frame rate, whatever

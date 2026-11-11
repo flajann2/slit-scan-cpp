@@ -60,6 +60,9 @@ namespace Gui {
 
     // the source that broadcasts this gel's frames
     Gel::GelSource& source() { return *gel_source; }
+
+    // puts the gel's configuration dialog away, if it is open
+    void close_dialog() { gel_config->hide(); }
     
   protected:
     bool setup_from_file(std::string gel_pathname) {

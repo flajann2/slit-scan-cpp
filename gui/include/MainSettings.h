@@ -14,8 +14,11 @@ namespace Gui {
       double sweep_rate; // of the slit across a still gel, in gel widths per second
     };
 
+    // what the settings are when the application starts
+    static constexpr Settings defaults() { return Settings{3, 0, 10.0, 0.05}; }
+
     MainSettings() {
-      main_settings = Settings(3, 0, 10.0, 0.05); // TODO: semi-temporary. Load from yaml
+      main_settings = defaults(); // TODO: semi-temporary. Load from yaml
 
       auto builder = obtain_builder();
 
@@ -40,11 +43,26 @@ namespace Gui {
       main_sweep_editor = make_unique<Gui::EntryEditor<double>>(main_settings.sweep_rate, main_sweep_e);
     }
 
+    // Back to the settings the application starts with.
+    void reset() {
+      main_settings = defaults();
+      show_settings();
+    }
+
   protected:
     shared_ptr<Gtk::Dialog> main_settings_dialog;
 
+    // every box shows what its setting really is
+    void show_settings() {
+      main_width_editor->refresh();
+      main_spacing_editor->refresh();
+      main_factor_editor->refresh();
+      main_sweep_editor->refresh();
+    }
+
     bool on_close() {
       cout << "MainSettings close event" << endl;
+      show_settings(); // anything left half typed is dropped
       main_settings_dialog->hide();
       return true;
     }

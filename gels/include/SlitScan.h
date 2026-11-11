@@ -81,6 +81,13 @@ namespace Gel {
       bool sweep_left  = true;
       bool sweep_right = true;
 
+      // is a side being fed several gels, one after the other? Then
+      // the slit crosses each gel just once, instead of going over
+      // and back, and at the far edge it says so by way of
+      // signal_pass_finished() and waits there for the next gel.
+      bool sequence_left  = false;
+      bool sequence_right = false;
+
       // with gels on one side only, show them on both sides.
       bool mirror_missing_side = true;
 
@@ -89,6 +96,7 @@ namespace Gel {
 
     SlitScan() : jobs(64) {
       m_dispatcher.connect(sigc::mem_fun(*this, &SlitScan::on_frame_ready));
+      m_pass_dispatcher.connect(sigc::mem_fun(*this, &SlitScan::on_pass_finished));
       tick_server = IMasterTickServer::create();
       tick_server->signal_tick().connect(sigc::mem_fun(*this, &SlitScan::on_tick));
       worker_thread = std::thread(&SlitScan::worker, this);
@@ -123,7 +131,11 @@ namespace Gel {
     // A new frame for one side. The frame must be 8-bit RGB and
     // must not be modified afterwards. Hook these up to
     // GelSource::signal_next_frame().
-    void push_frame(Side side, const cv::Mat& frame, time_stamp ts) {
+    //
+    // `gel` says which gel the frame is from. It can be any number,
+    // as long as it changes when the gel does: a frame from another
+    // gel starts the slit off again from the near edge.
+    void push_frame(Side side, const cv::Mat& frame, time_stamp ts, unsigned gel = 0) {
       if (frame.empty() || frame.type() != CV_8UC3)
         return;
       Job job;
@@ -131,6 +143,7 @@ namespace Gel {
       job.side = side;
       job.frame = frame;
       job.ts = ts;
+      job.gel = gel;
       jobs.try_enqueue(std::move(job)); // if we are swamped, drop it
     }
 
@@ -173,7 +186,16 @@ namespace Gel {
     }
 
     // Wipes the strips and forgets the frames.
+    //
+    // The request is a flag the worker looks at before every job,
+    // so it cannot be lost however busy the worker is; the job
+    // only serves to wake a worker that has nothing else to do.
     void clear() {
+      clear_requested = true;
+      {
+        lockguard lock(out_mutex);
+        out_frame.release(); // a frame on its way to the GUI is void
+      }
       Job job;
       job.kind = Job::Kind::Clear;
       jobs.try_enqueue(std::move(job));
@@ -181,6 +203,11 @@ namespace Gel {
 
     // The finished frames, RGB, emitted in the GUI thread.
     sig_next_frame& signal_next_frame() { return m_sig_next_frame; }
+
+    // Emitted in the GUI thread when the slit has crossed the whole
+    // of a gel on a side that has several (see Params). This is
+    // the moment to send that side its next gel.
+    sigc::signal<void(Side)>& signal_pass_finished() { return m_sig_pass_finished; }
 
   protected:
     // GUI thread. Ask the worker for the next output frame.
@@ -205,6 +232,14 @@ namespace Gel {
         m_sig_next_frame.emit(frame, ts);
     }
 
+    // GUI thread, by way of the dispatcher.
+    void on_pass_finished() {
+      if (pass_finished_left.exchange(false))
+        m_sig_pass_finished.emit(Side::Left);
+      if (pass_finished_right.exchange(false))
+        m_sig_pass_finished.emit(Side::Right);
+    }
+
   private:
     struct Job {
       enum class Kind { Configure, Frame, Tick, Resume, Clear };
@@ -214,6 +249,7 @@ namespace Gel {
       time_stamp ts;
       Params params;
       unsigned epoch = 0; // of a Tick: see discard_pending()
+      unsigned gel = 0;   // of a Frame: which gel it is from
     };
 
     // the scan state of one side. Worker thread only.
@@ -222,6 +258,8 @@ namespace Gel {
       cv::Mat scratch;    // same size; we shift into it and swap
       cv::Mat frame;      // latest frame from the source
       double phase = 0.0; // where the slit is in its sweep
+      unsigned gel = 0;   // which gel the frame is from
+      bool pass_reported = false; // told the GUI this gel has been crossed
 
       // the frame scaled to the height of the strip, so that cutting
       // slits is a matter of columns only. Made when it is needed.
@@ -239,12 +277,17 @@ namespace Gel {
     unique_ptr<IMasterTickServer> tick_server;
     Glib::Dispatcher m_dispatcher;
     sig_next_frame m_sig_next_frame;
+    Glib::Dispatcher m_pass_dispatcher;
+    sigc::signal<void(Side)> m_sig_pass_finished;
     Params requested;
     bool configured = false;
 
     // ---- shared between the two threads
     GelQueue<Job> jobs;
     std::atomic<unsigned> epoch{0}; // goes up each time playback stops
+    std::atomic<bool> clear_requested{false};      // see clear()
+    std::atomic<bool> pass_finished_left{false};  // set by the worker,
+    std::atomic<bool> pass_finished_right{false}; // taken by the GUI
     std::mutex out_mutex; // guards out_frame and out_ts
     cv::Mat out_frame;
     time_stamp out_ts;
@@ -288,6 +331,9 @@ namespace Gel {
 
     void worker() {
       while (auto job = jobs.dequeue()) {
+        if (clear_requested.exchange(false))
+          wipe();
+
         switch (job->kind) {
         case Job::Kind::Configure:
           apply_params(sanitized(job->params));
@@ -303,6 +349,15 @@ namespace Gel {
               || job->frame.size() != s.frame.size()) {
             s.frame = job->frame;
             s.prepared_stale = true;
+          }
+          // Another gel: the slit starts again at the near edge,
+          // and what it saw of the last gel is not blended in.
+          if (job->gel != s.gel) {
+            s.gel = job->gel;
+            s.phase = 0.0;
+            s.have_prev = false;
+            s.prev_column.release();
+            s.pass_reported = false;
           }
           break;
         }
@@ -321,20 +376,26 @@ namespace Gel {
           break;
 
         case Job::Kind::Clear:
-          for (SideState* s : {&left, &right}) {
-            s->frame.release();
-            s->prepared.release();
-            s->prepared_stale = true;
-            s->have_prev = false;
-            s->prev_column.release();
-            s->phase = 0.0;
-            if (!s->strip.empty()) s->strip.setTo(cv::Scalar::all(0));
-          }
-          slit_debt = 0.0;
-          have_last_tick = false;
-          break;
+          break; // done above; this job was only to wake us
         }
       }
+    }
+
+    // Back to how things were before the first frame.
+    void wipe() {
+      for (SideState* s : {&left, &right}) {
+        s->frame.release();
+        s->prepared.release();
+        s->prepared_stale = true;
+        s->have_prev = false;
+        s->prev_column.release();
+        s->gel = 0;
+        s->pass_reported = false;
+        s->phase = 0.0;
+        if (!s->strip.empty()) s->strip.setTo(cv::Scalar::all(0));
+      }
+      slit_debt = 0.0;
+      have_last_tick = false;
     }
 
     SideState& side_state(Side side) {
@@ -485,8 +546,8 @@ namespace Gel {
       last_tick = tick;
       have_last_tick = true;
 
-      add_slits(left, slits, p.sweep_left);
-      add_slits(right, slits, p.sweep_right);
+      add_slits(left, slits, p.sweep_left, p.sequence_left, pass_finished_left);
+      add_slits(right, slits, p.sweep_right, p.sequence_right, pass_finished_right);
     }
 
     // Turn the frame the way the scan wants it, and scale it to the
@@ -579,7 +640,8 @@ namespace Gel {
       s.prev_column = column;
     }
 
-    void add_slits(SideState& s, int slits, bool sweeps) {
+    void add_slits(SideState& s, int slits, bool sweeps
+                   , bool sequence, std::atomic<bool>& pass_finished) {
       if (slits <= 0 || s.frame.empty())
         return;
 
@@ -607,7 +669,21 @@ namespace Gel {
         : 0.0;
       s.phase += slits * step;
 
-      const double u_cur  = slit_u(s.phase, sweeps);
+      double u_cur = slit_u(s.phase, sweeps);
+
+      // One gel of several: the slit goes across once and stops at
+      // the far edge. There it tells the GUI, once, and waits for
+      // the frames of the next gel, which start it off again.
+      if (sequence && sweeps && p.sweep_rate != 0.0) {
+        const double across = std::min(std::abs(s.phase), 1.0);
+        u_cur = (p.sweep_rate > 0.0) ? across : 1.0 - across;
+        if (across >= 1.0 && !s.pass_reported) {
+          s.pass_reported = true;
+          pass_finished = true;
+          m_pass_dispatcher.emit();
+        }
+      }
+
       const double u_prev = s.have_prev ? s.prev_u : u_cur;
       s.prev_u = u_cur;
       s.have_prev = true;

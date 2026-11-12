@@ -31,3 +31,5 @@ target_link_libraries(slitscan PRIVATE
 # libzip: Export and Import of setups
 pkg_check_modules(LIBZIP REQUIRED IMPORTED_TARGET libzip)
 target_link_libraries(slitscan PRIVATE PkgConfig::LIBZIP)
+
+install(TARGETS slitscan RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

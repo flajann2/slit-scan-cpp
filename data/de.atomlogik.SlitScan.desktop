@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Slit Scan
+GenericName=Slit-Scan Animator
+Comment=Make streaming slit-scan animations from images, videos and a camera
+Exec=slitscan
+Icon=de.atomlogik.SlitScan
+Terminal=false
+Categories=AudioVideo;Video;
+Keywords=slit-scan;slitscan;stargate;visuals;VJ;motion graphics;animation;
+StartupNotify=true

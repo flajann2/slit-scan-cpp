@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2024-2026 Fred Mitchell -->
+<component type="desktop-application">
+  <id>de.atomlogik.SlitScan</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>Slit Scan</name>
+  <summary>Make streaming slit-scan animations</summary>
+
+  <developer id="de.atomlogik">
+    <name>Fred Mitchell</name>
+  </developer>
+
+  <description>
+    <p>
+      Slit Scan makes moving slit-scan images: the streaming tunnels of light
+      made famous by the Stargate sequence in 2001: A Space Odyssey. Give it
+      pictures, and it pulls a thin slit across them, frame after frame, and
+      builds the slivers into a picture that streams out of the centre of the
+      screen towards you.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Vertical and horizontal slit scans</li>
+      <li>Still images, videos and a live camera as source pictures</li>
+      <li>Any number of pictures on each side, taking turns</li>
+      <li>Rotation, spin and mirroring for each picture</li>
+      <li>Recording to MP4, MKV, MOV, WebM, AVI or Ogg, in H.264, H.265, VP9 or AV1</li>
+      <li>Setups saved as readable YAML files, and shared, pictures and all, as one file</li>
+    </ul>
+    <p>
+      It is made for music visuals, title sequences and motion graphics, and
+      for experimenting.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">de.atomlogik.SlitScan.desktop</launchable>
+  <provides>
+    <binary>slitscan</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/flajann2/slit-scan-cpp</url>
+  <url type="bugtracker">https://github.com/flajann2/slit-scan-cpp/issues</url>
+  <url type="vcs-browser">https://github.com/flajann2/slit-scan-cpp</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>A slit scan in the making, with pictures on both sides</caption>
+      <image>https://raw.githubusercontent.com/flajann2/slit-scan-cpp/master/docs/images/main-window.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A horizontal slit scan</caption>
+      <image>https://raw.githubusercontent.com/flajann2/slit-scan-cpp/master/docs/images/scan-horizontal.jpg</image>
+    </screenshot>
+    <screenshot>
+      <caption>Rotating and spinning a picture</caption>
+      <image>https://raw.githubusercontent.com/flajann2/slit-scan-cpp/master/docs/images/gel-dialog.png</image>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#5b8cff</color>
+    <color type="primary" scheme_preference="dark">#1a1a2e</color>
+  </branding>
+
+  <content_rating type="oars-1.1"/>
+
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <releases>
+    <release version="0.1.0" date="2026-11-12">
+      <description>
+        <p>The first release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

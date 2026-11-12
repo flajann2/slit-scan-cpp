@@ -38,6 +38,7 @@ Slit Scan is currently supported on *Linux*. Support for *macOS* and
 * Contents
 - [[#how-a-slit-scan-is-made][How a slit scan is made]]
 - [[#features][Features]]
+- [[#installing][Installing]]
 - [[#building][Building]]
 - [[#using-slit-scan][Using Slit Scan]]
 - [[#setups-saving-and-sharing][Setups: saving and sharing]]
@@ -92,14 +93,36 @@ from another./
 + *Plays well with tiling window managers*: dialogs are made to float
   under Hyprland, Sway and the like.
 
+* Installing
+
+** Arch Linux (AUR)
+
+#+begin_src shell
+aura -A slit-scan-git
+#+end_src
+
+Or with any other AUR helper, or by hand with =makepkg=.
+
+** Flatpak
+
+Until Slit Scan is on Flathub, build the Flatpak from the source (see
+[[file:packaging/README.org][packaging/README.org]]):
+
+#+begin_src shell
+flatpak-builder --user --install --force-clean build-flatpak packaging/flatpak/de.atomlogik.SlitScan.yml
+flatpak run de.atomlogik.SlitScan
+#+end_src
+
+The Flatpak carries its own FFmpeg, with all four recording formats.
+
 * Building
 
 ** Requirements
 
 | What                    | Needed for                         |
 |-------------------------+------------------------------------|
-| A C++23 compiler: Clang | building (the build asks for Clang) |
-| CMake 3.30 or newer     | building                           |
+| A C++23 compiler        | building (Clang, or GCC 14 or newer) |
+| CMake 3.28 or newer     | building                           |
 | Ninja (or Make)         | building                           |
 | gtkmm 4                 | the user interface                 |
 | OpenCV 4 or 5           | images, videos, cameras            |
@@ -130,8 +153,23 @@ ninja -C build
 ./build/main/slitscan
 #+end_src
 
-=-DENABLE_PLAYGROUND=OFF= leaves out the experiments in
-=playground/=.
+The compiler is CMake's default; add =-DCMAKE_CXX_COMPILER=clang++=
+for Clang. Without =CMAKE_BUILD_TYPE= the build is a Debug build.
+
+| Option                         | Default | What it does                                   |
+|--------------------------------+---------+------------------------------------------------|
+| =-DENABLE_PLAYGROUND=OFF=      | =ON=    | Leaves out the experiments in =playground/=    |
+| =-DSLITSCAN_REGENERATE_UI=OFF= | =ON=    | Never runs Cambalache; uses the committed files |
+| =-DCAMBALACHE=/path/to/it=     |         | Where Cambalache is, if not the Flatpak         |
+
+To install system-wide (the program, its desktop entry, AppStream
+metadata and icon):
+
+#+begin_src shell
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_PLAYGROUND=OFF
+ninja -C build
+sudo cmake --install build
+#+end_src
 
 ** About the UI files
 
@@ -147,7 +185,7 @@ runs Cambalache to regenerate them. It expects the Flatpak version:
 flatpak install flathub ar.xjuan.Cambalache
 #+end_src
 
-Its location is set by =CAMBALACHE= in =gui/CMakeLists.txt=. If you
+Its location is the =CAMBALACHE= cache variable. If you
 have not changed the design, and the build tries to run Cambalache
 anyway (after a checkout or patch has given the =.cmb= a newer
 time), make the generated files newer instead:
@@ -441,6 +479,8 @@ Some details:
 | =maths/=      | Reserved                                                                      |
 | =playground/= | Experiments, including =SSTest.cpp=, where the slit-scan algorithm began      |
 | =docs/=       | Notes, and the images in this README                                          |
+| =data/=       | Desktop entry, AppStream metadata and icon                                    |
+| =packaging/=  | The Flatpak manifest and the AUR packages                                     |
 
 ** How it fits together
 

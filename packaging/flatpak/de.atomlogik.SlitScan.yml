@@ -1,0 +1,239 @@
+# Flatpak manifest for Slit Scan.
+#
+# Local build and install (from the top of the repository):
+#
+#   flatpak-builder --user --install --force-clean \
+#       build-flatpak packaging/flatpak/de.atomlogik.SlitScan.yml
+#   flatpak run de.atomlogik.SlitScan
+#
+# The runtime ships GTK and glib but not the C++ bindings, OpenCV,
+# yaml-cpp, libzip or an ffmpeg with H.264/H.265, so those are built here.
+# The first build takes a while (OpenCV and the encoders); later builds
+# reuse the cache and only rebuild the app.
+#
+# Licensing: x264 and x265 are GPL, so the bundle as a whole is
+# distributed under the GPL. Slit Scan's own code stays MIT.
+
+id: de.atomlogik.SlitScan
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+command: slitscan
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=all          # V4L2 cameras (/dev/video*) and the GPU
+  - --filesystem=home     # gels and setups reference files by path
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /lib/cmake
+  - /share/pkgconfig
+  - /share/aclocal
+  - /share/doc
+  - /share/man
+  - /share/gtk-doc
+  - /share/licenses/opencv5
+  - '*.la'
+  - '*.a'
+
+modules:
+
+  # ---------------------------------------------------------------- C++ GTK
+
+  - name: libsigc++
+    buildsystem: meson
+    config-opts:
+      - -Dbuild-documentation=false
+      - -Dbuild-examples=false
+      - -Dbuild-tests=false
+    sources:
+      - type: archive
+        url: https://github.com/libsigcplusplus/libsigcplusplus/releases/download/3.8.1/libsigc++-3.8.1.tar.xz
+        sha256: 4ff41d1474e501d3baeced4c989d154338206ac16471e614376496b63fe252d1
+
+  - name: glibmm
+    buildsystem: meson
+    config-opts:
+      - -Dbuild-documentation=false
+      - -Dbuild-examples=false
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/glibmm/2.90/glibmm-2.90.0.tar.xz
+        sha256: e2efa45643f16b9fea2d6299f2f403d672eaeacddf0ff7f8094e1af9b0f5980b
+
+  - name: cairomm
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://cairographics.org/releases/cairomm-1.18.1.tar.xz
+        sha256: e0e996a979ee52c840dca3ee74f5d005e3259b94ddce58f255d3b6f47c8cb41d
+
+  - name: pangomm
+    buildsystem: meson
+    config-opts:
+      - -Dbuild-documentation=false
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/pangomm/2.58/pangomm-2.58.0.tar.xz
+        sha256: 217514c1a65035c2fce6e69e33b0d92bafa2594cc474e995a4473441b10f3a33
+
+  - name: gtkmm
+    buildsystem: meson
+    config-opts:
+      - -Dbuild-documentation=false
+      - -Dbuild-demos=false
+      - -Dbuild-tests=false
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/gtkmm/4.24/gtkmm-4.24.0.tar.xz
+        sha256: 7fd9cea356e7d3b74bf7d2a51d7e0e6763f3f9f1cddc5e77c8b0b5b7fa9d5e5a
+
+  # ------------------------------------------------------- setups and .hal
+
+  - name: yaml-cpp
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DYAML_BUILD_SHARED_LIBS=ON
+      - -DYAML_CPP_BUILD_TESTS=OFF
+      - -DYAML_CPP_BUILD_TOOLS=OFF
+      - -DYAML_CPP_BUILD_CONTRIB=OFF
+    sources:
+      - type: archive
+        url: https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
+        sha256: 25cb043240f828a8c51beb830569634bc7ac603978e0f69d6b63558dadefd49a
+
+  - name: libzip
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_GNUTLS=OFF
+      - -DENABLE_OPENSSL=OFF
+      - -DENABLE_COMMONCRYPTO=OFF
+      - -DBUILD_TOOLS=OFF
+      - -DBUILD_REGRESS=OFF
+      - -DBUILD_OSSFUZZ=OFF
+      - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_DOC=OFF
+    sources:
+      - type: archive
+        url: https://github.com/nih-at/libzip/releases/download/v1.12.1/libzip-1.12.1.tar.xz
+        sha256: c40062022a1963c80573d48f6070792297cecd7c6bffe3aefcac0d8b9bee8913
+
+  # ------------------------------------------------------------ encoders
+
+  - name: x264
+    config-opts:
+      - --enable-shared
+      - --disable-cli
+    sources:
+      - type: git
+        url: https://code.videolan.org/videolan/x264.git
+        commit: b35605ace3ddf7c1a5d67a2eb553f034aef41d55
+
+  - name: x265
+    buildsystem: cmake-ninja
+    subdir: source
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_SHARED=ON
+      - -DENABLE_CLI=OFF
+    sources:
+      - type: archive
+        url: https://github.com/Multicorewareinc/x265/releases/download/4.3/x265_4.3.tar.gz
+        sha256: 83c53e4c8bbb8f1e33ed59e10a7d621d1d7801ca853910c3eb41f038b8ffb121
+
+  - name: svt-av1
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=ON
+      - -DBUILD_APPS=OFF
+      - -DBUILD_TESTING=OFF
+    sources:
+      - type: archive
+        url: https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v4.3.0/SVT-AV1-v4.3.0.tar.bz2
+        sha256: 9223ce06e6172ad41357ed23b3b00f036e03794b86b0e20ea9ccb3f648b8955d
+
+  # The runtime's own ffmpeg is a restricted build, so the app carries one
+  # with the encoders the Video Setup dialog offers. Slit Scan runs the
+  # ffmpeg program for recording, so /bin/ffmpeg is kept.
+  - name: ffmpeg
+    config-opts:
+      - --enable-gpl
+      - --enable-shared
+      - --disable-static
+      - --disable-doc
+      - --disable-ffplay
+      - --disable-ffprobe
+      - --enable-libx264
+      - --enable-libx265
+      - --enable-libvpx
+      - --enable-libsvtav1
+    sources:
+      - type: archive
+        url: https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+        sha256: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+
+  # --------------------------------------------------------------- OpenCV
+
+  - name: opencv
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_LIST=core,imgproc,imgcodecs,videoio,geometry
+      - -DOPENCV_GENERATE_PKGCONFIG=ON
+      - -DWITH_FFMPEG=ON
+      - -DWITH_V4L=ON
+      - -DWITH_GSTREAMER=OFF
+      - -DWITH_GTK=OFF
+      - -DWITH_QT=OFF
+      - -DWITH_IPP=OFF
+      - -DWITH_ITT=OFF
+      - -DWITH_OPENCL=OFF
+      - -DWITH_ADE=OFF
+      - -DWITH_PROTOBUF=OFF
+      - -DWITH_1394=OFF
+      - -DWITH_OPENEXR=OFF
+      - -DBUILD_TESTS=OFF
+      - -DBUILD_PERF_TESTS=OFF
+      - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_DOCS=OFF
+      - -DBUILD_JAVA=OFF
+      - -DBUILD_opencv_apps=OFF
+      - -DBUILD_opencv_python3=OFF
+    sources:
+      - type: archive
+        url: https://github.com/opencv/opencv/archive/refs/tags/5.1.0.tar.gz
+        sha256: 638c1dae7e37e45afea21aa217dc667ad7cf57acc66cdf652c074f1e0e5ad6d2
+
+  # ------------------------------------------------------------ the app
+
+  - name: slit-scan
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_PLAYGROUND=OFF
+      - -DSLITSCAN_REGENERATE_UI=OFF
+    sources:
+      # Local builds use the working tree. For Flathub, replace this with
+      #   - type: git
+      #     url: https://github.com/flajann2/slit-scan-cpp.git
+      #     tag: v0.1.0
+      #     commit: <full commit hash of the tag>
+      - type: dir
+        path: ../..
+        skip:
+          - build
+          - build-flatpak
+          - .flatpak-builder
+          - .jj
+          - .git
+          - CMakeCache.txt
+          - CMakeFiles

@@ -1,17 +1,21 @@
 ### Project Slit Scan
 
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 
-# C++ compiler flags
-set(CMAKE_CXX_COMPILER "clang++" CACHE STRING "C++ compiler" FORCE)
+# The compiler is not set here, so that whoever builds can choose:
+# pass -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang for
+# Clang. Both Clang and GCC (14 or newer) build Slit Scan.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_COMPILER "clang" CACHE STRING "C compiler" FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Project name and version
-project(slit-scan  LANGUAGES CXX C)
+project(slit-scan VERSION 0.1.0 LANGUAGES CXX C)
+
+# The application's ID, which names its desktop file, icon and
+# metadata, and which Wayland and Flatpak know it by.
+set(SLITSCAN_APP_ID "de.atomlogik.SlitScan")
 
 include(FetchContent)
 ### FetchContent_Declare(
@@ -29,12 +33,20 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 option(ENABLE_PLAYGROUND "Enable playground" ON)
+
+# The UI files in gui/ui/ are made from the Cambalache project, and
+# are committed. Off, the committed files are used as they are, and
+# Cambalache is not needed: this is what packages want.
+option(SLITSCAN_REGENERATE_UI "Regenerate the UI files from the Cambalache project" ON)
 option(ENABLE_TESTS "Enable testing" OFF)
 option(ENABLE_DOCS "Enable documentation" OFF)
 
 include(CTest)
 
-set(CMAKE_BUILD_TYPE Debug)
+# Debug unless asked for something else; packages ask for Release.
+if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
 
 # Define GNU standard installation direories
 include(GNUInstallDirs)
@@ -58,6 +70,9 @@ endif()
 if (ENABLE_PLAYGROUND)
   add_subdirectory(playground)
 endif()
+
+# The desktop launcher, the icon and the application's metadata
+add_subdirectory(data)
 
 if (ENABLE_TESTS)
   enable_testing()

@@ -47,23 +47,26 @@ target_link_libraries(GuiLib PRIVATE ${COMMON_LIBS})
 pkg_check_modules(LIBZIP REQUIRED IMPORTED_TARGET libzip)
 target_link_libraries(GuiLib PRIVATE PkgConfig::LIBZIP)
 
-set(CAMBALACHE "/var/lib/flatpak/exports/bin/ar.xjuan.Cambalache")
-add_custom_command(
-  OUTPUT ${CMBO} ${CREC}
-  COMMAND ${CAMBALACHE} -E ${CMB}
-  COMMAND glib-compile-resources ${CREX} --target=${CREC} --generate-source -C clang
-  DEPENDS ${CMB} ${CREX}
-  WORKING_DIRECTORY ${UI_SOURCE_DIR}
-  COMMENT generate the ui files, then the resource
-  VERBATIM
-)
+if (SLITSCAN_REGENERATE_UI)
+  set(CAMBALACHE "/var/lib/flatpak/exports/bin/ar.xjuan.Cambalache"
+      CACHE FILEPATH "Cambalache, which makes the UI files")
+  add_custom_command(
+    OUTPUT ${CMBO} ${CREC}
+    COMMAND ${CAMBALACHE} -E ${CMB}
+    COMMAND glib-compile-resources ${CREX} --target=${CREC} --generate-source -C clang
+    DEPENDS ${CMB} ${CREX}
+    WORKING_DIRECTORY ${UI_SOURCE_DIR}
+    COMMENT "generate the ui files, then the resource"
+    VERBATIM
+  )
 
-add_custom_target(
-  SlitscanUI ALL
-  DEPENDS ${CMB} ${CREC}
-)
+  add_custom_target(
+    SlitscanUI ALL
+    DEPENDS ${CMB} ${CREC}
+  )
 
-add_dependencies(SlitscanUI GuiLib)
+  add_dependencies(SlitscanUI GuiLib)
+endif()
 
 # Specify the include directories for the library
 target_include_directories(GuiLib PUBLIC
@@ -71,12 +74,4 @@ target_include_directories(GuiLib PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Installation rules
-install(TARGETS GuiLib
-    EXPORT GuiLibTargets
-    DESTINATION lib
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    DESTINATION include
-)
+# GuiLib is part of the program, linked into it, and is not installed.

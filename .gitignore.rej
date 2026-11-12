@@ -1,0 +1,14 @@
+--- .gitignore	2026-11-12 09:53:35.865052470 -0500
++++ .gitignore	2026-11-12 10:00:31.885428471 -0500
+@@ -2,3 +2,11 @@
+ compile
+ CMakeFiles/
+ .cache/
++build-flatpak/
++.flatpak-builder/
++*.flatpak
++packaging/aur/*/src/
++packaging/aur/*/pkg/
++packaging/aur/*/slit-scan/
++packaging/aur/*/*.tar.gz
++packaging/aur/*/*.pkg.tar.zst

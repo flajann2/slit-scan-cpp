@@ -16,8 +16,16 @@ public:
   // That is a fine thing in a mail program. Here it means that one
   // copy left running out of sight, or stuck, silently stops every
   // later launch from starting.
-  SlitScanApp(std::string appname = "de.atomlogik.slit-scan")
+  // The ID must match the desktop file's name (data/), or desktops
+  // cannot tell which icon and name the window belongs to.
+  SlitScanApp(std::string appname = "de.atomlogik.SlitScan")
     : Gtk::Application(appname, Gio::Application::Flags::NON_UNIQUE) {
+    // Every window of ours -- dialogs and the splash screen as well
+    // as the main window -- tells the desktop which application it
+    // belongs to. GTK takes that from the application for windows
+    // registered with it, and from the program's name for the rest,
+    // so the program's name is made the application ID too.
+    Glib::set_prgname(appname);
     // the command line: slitscan --no-splash (and --help lists it)
     add_main_option_entry(Gio::Application::OptionType::BOOL, "no-splash", '\0'
                           , "Start without the splash screen");
@@ -37,8 +45,8 @@ protected:
     
     main_builder = Gui::obtain_builder();
     main_window = main_builder->get_object<Gtk::Window>(ss::main_window); 
+    add_window(*main_window); // before it is shown, so that it is shown as ours
     main_window->show();
-    add_window(*main_window);
 
     // functionality
     gel_selection = Gui::GelSelection::create();

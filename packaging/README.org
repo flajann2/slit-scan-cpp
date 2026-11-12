@@ -1,0 +1,108 @@
+#+TITLE: Packaging Slit Scan
+
+Two packages are kept here: a Flatpak (any Linux distribution, and the
+route to Flathub) and AUR packages for Arch.
+
+The application ID is =de.atomlogik.SlitScan=. It is used by the
+desktop file, the AppStream metainfo, the icon, the Flatpak and the
+GTK application itself, so they all have to agree. Under Wayland the
+windows report it as their app_id, so window rules match
+=de.atomlogik.SlitScan=.
+
+* Flatpak
+
+** One-time setup
+
+#+begin_src fish
+aura -S flatpak-builder
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.gnome.Platform//51 org.gnome.Sdk//51
+#+end_src
+
+** Build, install and run
+
+From the top of the repository:
+
+#+begin_src fish
+flatpak-builder --user --install --force-clean build-flatpak packaging/flatpak/de.atomlogik.SlitScan.yml
+flatpak run de.atomlogik.SlitScan
+#+end_src
+
+The first build compiles the C++ GTK bindings, yaml-cpp, libzip, the
+video encoders, FFmpeg and OpenCV, so it takes a while. Later builds
+reuse =.flatpak-builder/= and only rebuild the app.
+
+** A single-file bundle to hand to someone
+
+#+begin_src fish
+flatpak build-bundle ~/.local/share/flatpak/repo slit-scan.flatpak de.atomlogik.SlitScan
+#+end_src
+
+They install it with =flatpak install --user slit-scan.flatpak=.
+
+** Permissions
+
+- =--device=all= gives access to cameras (=/dev/video*=).
+- =--filesystem=home= is needed because setups refer to gels by path
+  and the Export/Import of =.hal= files writes next to them.
+
+** Licence of the bundle
+
+The bundle includes x264 and x265, which are GPL, so the Flatpak as a
+whole is distributed under the GPL. The Slit Scan code itself remains
+MIT.
+
+** Submitting to Flathub
+
+1. Tag a release (=v0.1.0=) and push it, together with =docs/images/=
+   (the metainfo screenshots point at them on =master=).
+2. In the manifest, replace the =type: dir= source of the =slit-scan=
+   module with the =git= source shown in the comment, using the tag
+   and its full commit hash.
+3. Check the metadata:
+   #+begin_src fish
+   flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest packaging/flatpak/de.atomlogik.SlitScan.yml
+   flatpak run --command=flatpak-builder-lint org.flatpak.Builder repo repo
+   #+end_src
+4. Fork =github.com/flathub/flathub=, add the manifest on a new branch
+   based on =new-pr=, and open a pull request against =new-pr=.
+5. Flathub verifies =de.atomlogik.*= IDs by having you place a token at
+   =https://atomlogik.de/.well-known/org.flathub.VerifiedApps.txt=.
+
+* AUR
+
+Two packages:
+
+- =aur/slit-scan-git= builds the latest commit on the default branch.
+- =aur/slit-scan= builds a tagged release. It is ready for when
+  =v0.1.0= is tagged.
+
+** Test locally
+
+#+begin_src fish
+cd packaging/aur/slit-scan-git
+makepkg -si
+#+end_src
+
+** Publish
+
+Each AUR package is its own git repository. For the git package:
+
+#+begin_src fish
+git clone ssh://aur@aur.archlinux.org/slit-scan-git.git ~/aur/slit-scan-git
+cp packaging/aur/slit-scan-git/PKGBUILD ~/aur/slit-scan-git/
+cd ~/aur/slit-scan-git
+makepkg --printsrcinfo > .SRCINFO
+git add PKGBUILD .SRCINFO
+git commit -m "Initial import"
+git push
+#+end_src
+
+For the release package, after pushing the =v0.1.0= tag, run
+=updpkgsums= in =packaging/aur/slit-scan= so the =SKIP= becomes the
+real checksum, then publish it the same way under
+=ssh://aur@aur.archlinux.org/slit-scan.git=.
+
+For a new release: bump =pkgver=, reset =pkgrel=1=, run =updpkgsums=,
+regenerate =.SRCINFO=, commit and push. The git package only needs a
+push when the PKGBUILD itself changes.

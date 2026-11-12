@@ -12,3 +12,12 @@ build-flatpak/
 # makepkg output: keep only the PKGBUILD
 packaging/aur/*/*
 !packaging/aur/*/PKGBUILD
+
+# Flatpak build output
+build-flatpak/
+.flatpak-builder/
+*.flatpak
+
+# makepkg output: keep only the PKGBUILD
+packaging/aur/*/*
+!packaging/aur/*/PKGBUILD

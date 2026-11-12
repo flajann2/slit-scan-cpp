@@ -1,4 +1,4 @@
-# Maintainer: Fred Mitchell <your-email-here>
+# Maintainer: Fred Mitchell <fred at atomlogik dot de>
 
 pkgname=slit-scan
 pkgver=0.1.0
@@ -13,7 +13,7 @@ depends=('gtkmm-4.0' 'opencv' 'yaml-cpp' 'libzip' 'ffmpeg' 'freetype2'
 # find_package(OpenCV) fails without them at build time.
 makedepends=('cmake' 'ninja' 'vtk' 'hdf5')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')  # run updpkgsums after tagging v$pkgver
+sha256sums=('e6c5fdd5eb81bc124fad11556a3f628061782605237b38662ce5699590228041')
 
 build() {
   cmake -B build -S "$pkgname-cpp-$pkgver" -G Ninja \
@@ -21,7 +21,6 @@ build() {
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DENABLE_PLAYGROUND=OFF \
     -DSLITSCAN_REGENERATE_UI=OFF \
-    -Wno-dev
   cmake --build build
 }
 

@@ -1,7 +1,7 @@
 #+TITLE: Slit Scan
 #+OPTIONS: toc:2 num:nil
 
-[[file:docs/images/scan-vertical.jpg]]
+[[file:docs/images/promo.webp]]
 
 * Introduction
 

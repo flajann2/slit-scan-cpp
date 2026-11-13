@@ -21,3 +21,5 @@ build-flatpak/
 # makepkg output: keep only the PKGBUILD
 packaging/aur/*/*
 !packaging/aur/*/PKGBUILD
+docs/images/promo.mp4
+docs/images/*.mp4

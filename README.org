@@ -119,18 +119,18 @@ The Flatpak carries its own FFmpeg, with all four recording formats.
 
 ** Requirements
 
-| What                    | Needed for                         |
-|-------------------------+------------------------------------|
-| A C++23 compiler        | building (Clang, or GCC 14 or newer) |
-| CMake 3.28 or newer     | building                           |
-| Ninja (or Make)         | building                           |
-| gtkmm 4                 | the user interface                 |
-| OpenCV 4 or 5           | images, videos, cameras            |
-| yaml-cpp                | setup files                        |
-| libzip                  | sharing setups (=.hal= files)      |
-| FreeType, GLib          | text, resources                    |
-| FFmpeg                  | recording (strongly recommended)   |
-| Cambalache              | only for changing the UI design    |
+| What                | Needed for                           |
+|---------------------+--------------------------------------|
+| A C++23 compiler    | building (Clang, or GCC 14 or newer) |
+| CMake 3.28 or newer | building                             |
+| Ninja (or Make)     | building                             |
+| gtkmm 4             | the user interface                   |
+| OpenCV 4 or 5       | images, videos, cameras              |
+| yaml-cpp            | setup files                          |
+| libzip              | sharing setups (=.hal= files)          |
+| FreeType, GLib      | text, resources                      |
+| FFmpeg              | recording (strongly recommended)     |
+| Cambalache          | only for changing the UI design      |
 
 On Arch Linux:
 
@@ -156,10 +156,10 @@ ninja -C build
 The compiler is CMake's default; add =-DCMAKE_CXX_COMPILER=clang++=
 for Clang. Without =CMAKE_BUILD_TYPE= the build is a Debug build.
 
-| Option                         | Default | What it does                                   |
-|--------------------------------+---------+------------------------------------------------|
-| =-DENABLE_PLAYGROUND=OFF=      | =ON=    | Leaves out the experiments in =playground/=    |
-| =-DSLITSCAN_REGENERATE_UI=OFF= | =ON=    | Never runs Cambalache; uses the committed files |
+| Option                       | Default | What it does                                    |
+|------------------------------+---------+-------------------------------------------------|
+| =-DENABLE_PLAYGROUND=OFF=      | =ON=      | Leaves out the experiments in =playground/=       |
+| =-DSLITSCAN_REGENERATE_UI=OFF= | =ON=      | Never runs Cambalache; uses the committed files |
 | =-DCAMBALACHE=/path/to/it=     |         | Where Cambalache is, if not the Flatpak         |
 
 To install system-wide (the program, its desktop entry, AppStream
@@ -196,10 +196,10 @@ touch gui/ui/*.ui gui/ui/resources.c
 
 ** Command line
 
-| Option        | What it does                      |
-|---------------+-----------------------------------|
-| =--no-splash= | Start without the splash screen   |
-| =--help=      | List the options                  |
+| Option      | What it does                    |
+|-------------+---------------------------------|
+| =--no-splash= | Start without the splash screen |
+| =--help=      | List the options                |
 
 [[file:docs/images/splash.png]]
 
@@ -284,11 +284,11 @@ Click a gel's *⚙* to rotate, spin or flip it. The preview shows the
 gel exactly as the scan receives it: spinning at the rate set, and
 live for videos and cameras.
 
-| Control | Range        | What it does                                                   |
-|---------+--------------+----------------------------------------------------------------|
-| Rotate  | −180 to 180  | A fixed rotation, in degrees. Right of centre is anticlockwise |
-| Rate    | −100 to 100  | Spin, in revolutions per minute. The sign is the direction     |
-| Flip    | on / off     | Mirrors the gel left to right                                  |
+| Control | Range       | What it does                                                   |
+|---------+-------------+----------------------------------------------------------------|
+| Rotate  | −180 to 180 | A fixed rotation, in degrees. Right of centre is anticlockwise |
+| Rate    | −100 to 100 | Spin, in revolutions per minute. The sign is the direction     |
+| Flip    | on / off    | Mirrors the gel left to right                                  |
 
 Both sliders start in the middle, at 0. Changing the rate carries on
 from the angle the gel has reached, so the picture never jumps.
@@ -322,12 +322,12 @@ The *Video* page is reserved for later.
 
 [[file:docs/images/video-setup-format.png]]
 
-| Choice      | Options                                                                       |
-|-------------+-------------------------------------------------------------------------------|
-| Resolution  | 800 × 600 up to 7680 × 4320, in 12 common sizes. Default 1280 × 800           |
-| FPS         | 24, 25, 30, 50, 60. Default 30                                                |
-| File Format | mp4, avi, mov, webm, mkv, ogg. Default mp4                                    |
-| Codec       | H.264, H.265 (HEVC), VP9, AV1. Default H.264                                  |
+| Choice      | Options                                                             |
+|-------------+---------------------------------------------------------------------|
+| Resolution  | 800 × 600 up to 7680 × 4320, in 12 common sizes. Default 1280 × 800 |
+| FPS         | 24, 25, 30, 50, 60. Default 30                                      |
+| File Format | mp4, avi, mov, webm, mkv, ogg. Default mp4                          |
+| Codec       | H.264, H.265 (HEVC), VP9, AV1. Default H.264                        |
 
 The resolution and frame rate are those of the scan itself, not only
 of the recording.
@@ -336,12 +336,12 @@ Not every file format can hold every codec, so the two boxes keep
 each other right: choose one the other cannot go with, and the other
 changes to match.
 
-| File format | Codecs it can hold                     |
-|-------------+----------------------------------------|
-| mp4, mkv    | H.264, H.265, VP9, AV1                 |
-| mov         | H.264, H.265                           |
-| webm        | VP9, AV1                               |
-| avi         | H.264                                  |
+| File format | Codecs it can hold                         |
+|-------------+--------------------------------------------|
+| mp4, mkv    | H.264, H.265, VP9, AV1                     |
+| mov         | H.264, H.265                               |
+| webm        | VP9, AV1                                   |
+| avi         | H.264                                      |
 | ogg         | none of the four: it is recorded as Theora |
 
 *** Effects
@@ -470,17 +470,17 @@ Some details:
 
 ** Layout of the source
 
-| Folder        | What is in it                                                                 |
-|---------------+-------------------------------------------------------------------------------|
-| =main/=       | The program's entry point                                                     |
-| =gui/include/= | The main window, the dialogs, setups and sharing                              |
-| =gui/ui/=     | The Cambalache project, and the UI files and resources made from it           |
-| =gels/include/= | Gel sources, the scanner (=SlitScan.h=), the recorder and video encoding     |
-| =maths/=      | Reserved                                                                      |
-| =playground/= | Experiments, including =SSTest.cpp=, where the slit-scan algorithm began      |
-| =docs/=       | Notes, and the images in this README                                          |
-| =data/=       | Desktop entry, AppStream metadata and icon                                    |
-| =packaging/=  | The Flatpak manifest and the AUR packages                                     |
+| Folder        | What is in it                                                          |
+|---------------+------------------------------------------------------------------------|
+| =main/=         | The program's entry point                                              |
+| =gui/include/=  | The main window, the dialogs, setups and sharing                       |
+| =gui/ui/=       | The Cambalache project, and the UI files and resources made from it    |
+| =gels/include/= | Gel sources, the scanner (=SlitScan.h=), the recorder and video encoding |
+| =maths/=        | Reserved                                                               |
+| =playground/=   | Experiments, including =SSTest.cpp=, where the slit-scan algorithm began |
+| =docs/=         | Notes, and the images in this README                                   |
+| =data/=         | Desktop entry, AppStream metadata and icon                             |
+| =packaging/=    | The Flatpak manifest and the AUR packages                              |
 
 ** How it fits together
 
@@ -497,14 +497,14 @@ Some details:
 
 ** Things you can tune
 
-| Constant              | File                         | Default | What it controls                                                     |
-|-----------------------+------------------------------+---------+----------------------------------------------------------------------|
-| =rate_minutes=        | =gui/include/GelConfig.h=    |     1.0 | The Rate slider is revolutions per this many minutes                 |
-| =endless_gel_seconds= | =gui/include/GelSelection.h= |    10.0 | How long a camera, or a still image with no sweep, has for its turn  |
-| =splash_seconds=      | =gui/include/Splash.h=       |     3.0 | How long the splash screen stays                                     |
-| =slits_per_second=    | =gels/include/SlitScan.h=    |    30.0 | How many slits are cut per second, whatever the frame rate           |
-| =spin_size=           | =gels/include/ImageGelSource.h= |  2160 | A spinning image is scaled to this many pixels before turning       |
-| =defaults()=          | =gui/include/MainSettings.h= |         | The Settings a new setup starts with                                 |
+| Constant            | File                          | Default | What it controls                                                    |
+|---------------------+-------------------------------+---------+---------------------------------------------------------------------|
+| =rate_minutes=        | =gui/include/GelConfig.h=       |     1.0 | The Rate slider is revolutions per this many minutes                |
+| =endless_gel_seconds= | =gui/include/GelSelection.h=    |    10.0 | How long a camera, or a still image with no sweep, has for its turn |
+| =splash_seconds=      | =gui/include/Splash.h=          |     3.0 | How long the splash screen stays                                    |
+| =slits_per_second=    | =gels/include/SlitScan.h=       |    30.0 | How many slits are cut per second, whatever the frame rate          |
+| =spin_size=           | =gels/include/ImageGelSource.h= |    2160 | A spinning image is scaled to this many pixels before turning       |
+| =defaults()=          | =gui/include/MainSettings.h=    |         | The Settings a new setup starts with                                |
 
 The encoder settings for each codec (quality and speed) are in
 =gels/include/VideoEncoding.h=.

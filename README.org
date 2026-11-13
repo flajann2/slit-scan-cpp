@@ -1,5 +1,6 @@
 #+TITLE: Slit Scan
-#+OPTIONS: toc:2 num:nil
+#+OPTIONS: toc:nil num:nil
+#+EXPORT_FILE_NAME: .github/README.md
 
 [[file:docs/images/promo.webp]]
 
@@ -12,9 +13,9 @@ Odyssey/, and later by the title sequences of /Doctor Who/.
 In 1968 Douglas Trumbull made the Stargate with a camera, a
 motorised rig and a narrow slit, exposing one frame at a time over
 long minutes. Slit Scan does the same thing digitally and live. You
-give it pictures, which it calls /gels/, and it pulls a thin slit across them, frame after frame, and
-builds those slivers into a picture that streams out of the centre
-of the screen towards you.
+give it pictures, which it calls /gels/, and it pulls a thin slit
+across them, frame after frame, and builds those slivers into a
+picture that streams out of the centre of the screen towards you.
 
 Gels can be still images, videos, or a live camera. You can watch
 the result as it is made, record it to a video file, save the whole
@@ -47,6 +48,9 @@ Slit Scan is currently supported on *Linux*. Support for *macOS* and
 - [[#credits-copyright-license][Credits, Copyright, License]]
 
 * How a slit scan is made
+:PROPERTIES:
+:CUSTOM_ID: how-a-slit-scan-is-made
+:END:
 
 [[file:docs/images/how-it-works.png]]
 
@@ -73,6 +77,9 @@ top and the bottom, and they meet along a line across the middle.
 from another./
 
 * Features
+:PROPERTIES:
+:CUSTOM_ID: features
+:END:
 
 + *Vertical and horizontal slit scans*, switchable while playing.
 + *Three kinds of gel*: still images (JPEG, PNG, GIF, WebP), videos
@@ -94,6 +101,9 @@ from another./
   under Hyprland, Sway and the like.
 
 * Installing
+:PROPERTIES:
+:CUSTOM_ID: installing
+:END:
 
 ** Arch Linux (AUR)
 
@@ -116,6 +126,9 @@ flatpak run de.atomlogik.SlitScan
 The Flatpak carries its own FFmpeg, with all four recording formats.
 
 * Building
+:PROPERTIES:
+:CUSTOM_ID: building
+:END:
 
 ** Requirements
 
@@ -207,6 +220,9 @@ touch gui/ui/*.ui gui/ui/resources.c
 click or a key./
 
 * Using Slit Scan
+:PROPERTIES:
+:CUSTOM_ID: using-slit-scan
+:END:
 
 ** Quick start
 
@@ -294,6 +310,9 @@ Both sliders start in the middle, at 0. Changing the rate carries on
 from the angle the gel has reached, so the picture never jumps.
 
 ** Settings
+:PROPERTIES:
+:CUSTOM_ID: settings
+:END:
 
 [[file:docs/images/settings.png]]
 
@@ -317,6 +336,9 @@ new one) it is marked in red, and the setting keeps its old value.
 The *Video* page is reserved for later.
 
 ** Video Setup
+:PROPERTIES:
+:CUSTOM_ID: video-setup
+:END:
 
 *** Format
 
@@ -352,6 +374,9 @@ changes to match.
 changed while playing; the scan starts afresh in the new direction.
 
 ** Recording
+:PROPERTIES:
+:CUSTOM_ID: recording
+:END:
 
 *REC* records the scan as it is made, one video frame per tick, at
 the resolution, frame rate, file format and codec set in Video Setup.
@@ -366,8 +391,9 @@ Stopping PLAY pauses a recording; it carries on in the same file when
 PLAY is pressed again.
 
 Recordings go to your Videos folder (or your home folder, if there
-is none), named for the time they were started, such as =slitscan-20261111-164730.mp4=. To record to a
-particular file instead, set =output= in the setup file (see below).
+is none), named for the time they were started, such as
+=slitscan-20261111-164730.mp4=. To record to a particular file
+instead, set =output= in the setup file (see below).
 
 When the =ffmpeg= program is installed, Slit Scan uses it to encode,
 with settings chosen to keep up with the scan as it happens, and
@@ -377,6 +403,9 @@ own writer is used; it offers fewer codecs, and some of them cannot
 keep up in real time.
 
 * Setups: saving and sharing
+:PROPERTIES:
+:CUSTOM_ID: setups-saving-and-sharing
+:END:
 
 A /setup/ is everything you have set up: the gels of both sides, in
 order, with their rotation, spin and flip; the Settings; and Video
@@ -389,7 +418,7 @@ Setup.
 | Load    | Opens a setup file, in place of the current setup. It does not start playing    |
 | Save    | Saves to the setup's file. A setup with no file yet is asked for one            |
 | Save as | Saves to a new file                                                             |
-| New     | Stops everything and starts afresh, as when Slit Scan was first opened           |
+| New     | Stops everything and starts afresh, as when Slit Scan was first opened          |
 
 The window's title shows the name of the setup's file.
 
@@ -467,6 +496,9 @@ Some details:
   or unpack to more than 16 GiB, before writing anything.
 
 * For developers
+:PROPERTIES:
+:CUSTOM_ID: for-developers
+:END:
 
 ** Layout of the source
 
@@ -513,6 +545,9 @@ To add an effect, see the comment at the top of
 =gels/include/ScanEffect.h=.
 
 * Roadmap
+:PROPERTIES:
+:CUSTOM_ID: roadmap
+:END:
 
 + *macOS and Windows.* Forthcoming. The libraries Slit Scan uses all
   run on both; the main piece of work is the recorder's link to
@@ -523,6 +558,9 @@ To add an effect, see the comment at the top of
 + Choosing which camera to use, when there is more than one.
 
 * Credits, Copyright, License
+:PROPERTIES:
+:CUSTOM_ID: credits-copyright-license
+:END:
 
 + MIT License; see =LICENSE=.
 + Copyright 2024–2026 Fred Mitchell.

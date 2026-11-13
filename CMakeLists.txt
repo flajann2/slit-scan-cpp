@@ -2,6 +2,13 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+  message(FATAL_ERROR
+    "In-source builds are not allowed; they overwrite the project Makefile.\n"
+    "Use 'make' or: cmake -S . -B build -GNinja\n"
+    "Then remove what this attempt left behind: rm -rf CMakeCache.txt CMakeFiles")
+endif()
+
 # The compiler is not set here, so that whoever builds can choose:
 # pass -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang for
 # Clang. Both Clang and GCC (14 or newer) build Slit Scan.

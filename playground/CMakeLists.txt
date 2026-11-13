@@ -29,7 +29,7 @@ add_custom_command(
   COMMAND cambalache -E ./uitest.cmb
   DEPENDS uitest.cmb
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMENT convert the gtk3 glade file to gtk4
+  COMMENT "convert the gtk3 glade file to gtk4"
   VERBATIM
 )
 
@@ -37,6 +37,7 @@ add_custom_target(
   UITestUI ALL
   DEPENDS uitest.cmb
 )
+
 
 add_dependencies(UITestUI UITest)
 

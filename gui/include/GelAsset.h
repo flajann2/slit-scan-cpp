@@ -148,8 +148,11 @@ namespace Gui {
       thumbnail.set_pixel_size(80);
       thumbnail.set(pixbuf);      
       prepend(thumbnail);
-      append(configuration);
-      append(remove_button);
+      // the two buttons sit one above the other, beside the thumbnail
+      button_column.append(configuration);
+      button_column.append(remove_button);
+      button_column.set_valign(Gtk::Align::CENTER); // not stretched to the height of the row
+      append(button_column);
       set_tooltip_text(pathname);
 
       // the two buttons: the dialog, and out of the list
@@ -158,8 +161,6 @@ namespace Gui {
       remove_button.set_label("\u2715");  // a cross
       remove_button.set_tooltip_text("Remove this gel");
       remove_button.signal_clicked().connect([this] { m_sig_remove.emit(); });
-      configuration.set_valign(Gtk::Align::CENTER); // not stretched to the height of the row
-      remove_button.set_valign(Gtk::Align::CENTER);
 
       // The configuration dialog works on the source directly:
       // what is set there is what the scanner gets. It opens on
@@ -192,6 +193,7 @@ namespace Gui {
 
     Gtk::Image thumbnail;
     cv::Mat mthumb;
+    Gtk::Box button_column{Gtk::Orientation::VERTICAL, 2};
     Gtk::Button configuration;
     Gtk::Button remove_button;
     Glib::RefPtr<Gdk::Pixbuf> pixbuf;

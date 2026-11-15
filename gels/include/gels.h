@@ -158,8 +158,37 @@ namespace Gel {
   // defined in Frame2Canvas.h
   inline void rotate(const cv::Mat& frame, cv::Mat& rotated, double angle);
 
-  // Base of all gel sources. A source does image processing on its
-  // frames and broadcasts them; it knows nothing about slits.
+  // How a gel's frames are to be turned and mirrored, as set in the
+  // gel's configuration dialog.
+  //
+  // A source hands this out with its frames, which it broadcasts as
+  // they come. It is the scanner that does the turning, because it
+  // has to be done slit by slit: every slit is cut at a moment of
+  // its own, and a spinning gel is at another angle in each of them.
+  // Turning the whole frame once per tick instead gives every slit
+  // of that tick the same angle, and the picture comes out in steps.
+  //
+  // So a pose holds the angle at one moment and how fast it changes,
+  // and from that the angle at any moment is known.
+  struct Pose {
+    double angle = 0.0;  // degrees at `when`; positive is anticlockwise
+    double rate = 0.0;   // degrees per second
+    time_stamp when{};
+    bool flip = false;   // mirror left-right, before the turning
+
+    double angle_at(time_stamp t) const {
+      return angle + rate * seconds_between(when, t);
+    }
+
+    // is there any turning to be done at all?
+    bool turns() const {
+      return rate != 0.0 || std::fmod(angle, 360.0) != 0.0;
+    }
+  };
+
+  // Base of all gel sources. A source broadcasts its frames, as they
+  // come, and says how they are to be turned (see Pose); it knows
+  // nothing about slits.
   //
   // The tick server is shared by the whole application, so a source
   // neither starts nor stops it, nor sets its interval -- whoever
@@ -230,6 +259,12 @@ namespace Gel {
     }
     double angle_now() const { return angle_at(time_basis::now()); }
 
+    // The transformations as of `when`, for the scanner: the frames
+    // are broadcast as they come, and this goes with them.
+    Pose pose_at(time_stamp when) const {
+      return Pose{angle_at(when), 360.0 * transform.rotation_rate, when, transform.flip};
+    }
+
     // For the configuration dialog: the latest frame as it comes,
     // before any transformation. Empty if there is none to show.
     virtual cv::Mat preview_frame() { return {}; }
@@ -238,7 +273,10 @@ namespace Gel {
     // running to have frames to show (videos, cameras) run for it.
     virtual void set_previewing(bool) {}
 
-    // The frame with the transformations applied, as of `when`.
+    // The frame with the transformations applied, as of `when`:
+    // the whole frame at one angle. This is for showing a gel, as
+    // the configuration dialog does. The scan does not use it; see
+    // Pose.
     // Hands back the very same frame if there is nothing to do, and
     // otherwise always a fresh Mat, never touching the one passed in.
     cv::Mat transformed(const cv::Mat& frame, time_stamp when) const {
@@ -272,9 +310,10 @@ namespace Gel {
     }
     
   protected:
-    // derived classes will use this to broadcast frames. The frame
-    // must not be modified after it has been broadcast, since the
-    // receivers may hold on to it (cv::Mat shares its pixels).
+    // derived classes will use this to broadcast frames, as they
+    // come: not turned and not mirrored. The frame must not be
+    // modified after it has been broadcast, since the receivers
+    // may hold on to it (cv::Mat shares its pixels).
     virtual void broadcast_next_frame(const cv::Mat& frame, time_stamp timestamp) {
       m_sig_next_frame.emit(frame, timestamp);
     }

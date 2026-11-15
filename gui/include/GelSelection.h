@@ -993,10 +993,12 @@ namespace Gui {
 
     // A frame from a gel, for the side the gel is on. The serial of
     // the turn goes with it, so that the scanner knows when it is
-    // looking at another gel.
+    // looking at another gel, and so does the gel's pose: how the
+    // scanner is to turn and mirror the frame.
     void on_gel_frame(const cv::Mat& frame, Gel::time_stamp ts, GelAsset* gel) {
       const auto place = gel->get_placement();
-      slit_scan->push_frame(side_of(place), frame, ts, turn_of(place).serial);
+      slit_scan->push_frame(side_of(place), frame, ts, turn_of(place).serial
+                            , gel->source().pose_at(ts));
     }
 
     // a finished frame from the scanner

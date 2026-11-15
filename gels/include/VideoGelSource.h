@@ -95,7 +95,7 @@ namespace Gel {
       if (frame.empty())
         return;
 
-      broadcast_next_frame(transformed(frame, tick), tick);
+      broadcast_next_frame(frame, tick);
     }
 
   private:

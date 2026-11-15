@@ -29,6 +29,11 @@
 //     one seamless stretch of the frame rather than pieces cut at
 //     rounded positions, and the perspective is rendered by
 //     render_half() rather than by warpPerspective.
+//   + it does the turning of the gels itself, slit by slit. A gel
+//     that spins is at another angle in every slit, and each column
+//     of the strip is cut at the angle of its own moment; see
+//     turning_block(). Frames come in as the sources have them,
+//     with a Pose that says how they are turned.
 //
 // The horizontal slit scan is the same thing lying on its side, and
 // that is just how it is made: the frames are transposed (rows for
@@ -135,7 +140,12 @@ namespace Gel {
     // `gel` says which gel the frame is from. It can be any number,
     // as long as it changes when the gel does: a frame from another
     // gel starts the slit off again from the near edge.
-    void push_frame(Side side, const cv::Mat& frame, time_stamp ts, unsigned gel = 0) {
+    //
+    // `pose` says how the frame is to be turned and mirrored. The
+    // frame itself comes as the source has it; the turning is done
+    // here, slit by slit. See GelSource::pose_at().
+    void push_frame(Side side, const cv::Mat& frame, time_stamp ts, unsigned gel = 0
+                    , const Pose& pose = Pose{}) {
       if (frame.empty() || frame.type() != CV_8UC3)
         return;
       Job job;
@@ -144,6 +154,7 @@ namespace Gel {
       job.frame = frame;
       job.ts = ts;
       job.gel = gel;
+      job.pose = pose;
       job.epoch = frame_epoch.load();
       jobs.try_enqueue(std::move(job)); // if we are swamped, drop it
     }
@@ -264,13 +275,15 @@ namespace Gel {
       Params params;
       unsigned epoch = 0; // of a Tick: see discard_pending(); of a Frame: see clear()
       unsigned gel = 0;   // of a Frame: which gel it is from
+      Pose pose;          // of a Frame: how it is to be turned and mirrored
     };
 
     // the scan state of one side. Worker thread only.
     struct SideState {
       cv::Mat strip;      // the integrated slits, newest at x = 0
       cv::Mat scratch;    // same size; we shift into it and swap
-      cv::Mat frame;      // latest frame from the source
+      cv::Mat frame;      // latest frame from the source, as it came
+      Pose pose;          // how that frame is to be turned and mirrored
       double phase = 0.0; // where the slit is in its sweep
       unsigned gel = 0;   // which gel the frame is from
       bool pass_reported = false; // told the GUI this gel has been crossed
@@ -279,6 +292,12 @@ namespace Gel {
       // slits is a matter of columns only. Made when it is needed.
       cv::Mat prepared;
       bool prepared_stale = true;
+
+      // For a gel that is turned: the frame before this one, and
+      // whether this one has come since the last slits were cut. A
+      // video's new slits fade from the one to the other.
+      cv::Mat prev_frame;
+      bool frame_changed = false;
 
       // where the slit was, and what it saw, at the last tick. The
       // new slits fill in smoothly between then and now.
@@ -336,6 +355,15 @@ namespace Gel {
     time_stamp last_tick;
     double slit_debt = 0.0;     // fractional slits carried to the next tick
 
+    // turning_block(): at most this many points of the frame to one
+    // pixel of the strip, down the slit and across it.
+    static constexpr int max_samples_down = 8;
+    static constexpr int max_samples_across = 16;
+
+    // turning_block(): how much a turned gel is softened, from 0
+    // (not at all) to 1 (the kernel 1 4 1, over 6, each way).
+    static constexpr double turned_softness = 1.0;
+
     static Params sanitized(Params q) {
       q.width  = std::max(q.width, 2);
       q.height = std::max(q.height, 2);
@@ -373,9 +401,16 @@ namespace Gel {
           SideState& s = side_state(job->side);
           if (job->frame.data != s.frame.data
               || job->frame.size() != s.frame.size()) {
+            s.prev_frame = s.frame;
             s.frame = job->frame;
             s.prepared_stale = true;
+            s.frame_changed = true;
           }
+          // the mirroring is part of what prepare() makes
+          if (job->pose.flip != s.pose.flip)
+            s.prepared_stale = true;
+          s.pose = job->pose;
+
           // Another gel: the slit starts again at the near edge,
           // and what it saw of the last gel is not blended in.
           if (job->gel != s.gel) {
@@ -383,6 +418,8 @@ namespace Gel {
             s.phase = 0.0;
             s.have_prev = false;
             s.prev_column.release();
+            s.prev_frame.release();
+            s.frame_changed = false;
             s.pass_reported = false;
           }
           break;
@@ -410,6 +447,9 @@ namespace Gel {
     // The side has no gel: no frame, and nothing to carry on from.
     void forget_frame(SideState& s) {
       s.frame.release();
+      s.prev_frame.release();
+      s.frame_changed = false;
+      s.pose = Pose{};
       s.prepared.release();
       s.prepared_stale = true;
       s.have_prev = false;
@@ -423,6 +463,9 @@ namespace Gel {
     void wipe() {
       for (SideState* s : {&left, &right}) {
         s->frame.release();
+        s->prev_frame.release();
+        s->frame_changed = false;
+        s->pose = Pose{};
         s->prepared.release();
         s->prepared_stale = true;
         s->have_prev = false;
@@ -574,22 +617,26 @@ namespace Gel {
     // Cut the slits that are due and add them to the strips.
     void integrate(time_stamp tick) {
       int slits = 0;
+      time_stamp from = tick; // the new slits stand for the time from here to the tick
       if (have_last_tick) {
         // never try to make up for more than a quarter second.
         const double dt = std::clamp(seconds_between(last_tick, tick), 0.0, 0.25);
         slit_debt += dt * p.slits_per_second;
         slits = int(slit_debt);
         slit_debt -= slits;
+        from = tick - std::chrono::duration_cast<time_basis::duration>(
+                        std::chrono::duration<double>(dt));
       }
       last_tick = tick;
       have_last_tick = true;
 
-      add_slits(left, slits, p.sweep_left, p.sequence_left, pass_finished_left);
-      add_slits(right, slits, p.sweep_right, p.sequence_right, pass_finished_right);
+      add_slits(left, slits, p.sweep_left, p.sequence_left, pass_finished_left, from, tick);
+      add_slits(right, slits, p.sweep_right, p.sequence_right, pass_finished_right, from, tick);
     }
 
-    // Turn the frame the way the scan wants it, and scale it to the
-    // height of the strip. Once per frame.
+    // For a gel that is not turned: mirror the frame if it is to be
+    // mirrored, lay it the way the scan wants it, and scale it to
+    // the height of the strip. Once per frame.
     // Shrinking averages over the rows it drops (INTER_AREA);
     // plain interpolation there would alias.
     void prepare(SideState& s) {
@@ -597,10 +644,19 @@ namespace Gel {
       if (!s.prepared_stale && s.prepared.rows == high)
         return;
 
-      // for a horizontal scan the frame goes in on its side
+      // never touching the frame itself: it is the source's
       cv::Mat frame = s.frame;
-      if (lying_flat())
-        cv::transpose(s.frame, frame);
+      if (s.pose.flip) {
+        cv::Mat mirrored;
+        cv::flip(frame, mirrored, 1);
+        frame = mirrored;
+      }
+      // for a horizontal scan the frame goes in on its side
+      if (lying_flat()) {
+        cv::Mat lying;
+        cv::transpose(frame, lying);
+        frame = lying;
+      }
 
       if (frame.rows == high)
         s.prepared = frame;
@@ -678,8 +734,145 @@ namespace Gel {
       s.prev_column = column;
     }
 
+    // The new slits of a gel that is turned: rotated, spinning, or
+    // both. As swept_block(), one block of picture `block_w` wide
+    // and `high` high with the newest column at x = 0, but cut
+    // straight from the frame as it came, each column at the angle
+    // the gel had at that column's own moment.
+    //
+    // Over the time the block stands for, the slit went from u_prev
+    // to u_cur across the gel (0 to 1) and the gel turned from
+    // a_prev to a_cur (degrees). Both are taken to go evenly, so a
+    // column a fraction of the way back in time is that fraction of
+    // the way back in position and in angle. The blocks of
+    // successive ticks then join up, and a spinning gel streams out
+    // smoothly instead of in one step per tick.
+    //
+    // Each pixel of the block is the average of nx by ny points of
+    // the frame, read with cubic interpolation: as many as it takes
+    // to cover what the pixel stands for. Down the slit that is
+    // the frame's rows per row of the strip, for a frame bigger
+    // than the strip. Across it, it is how far the gel moved under
+    // the slit in the time of one column, by the sweep or by the
+    // spin, which comes out as the motion blur a fast spin should
+    // have rather than as steps.
+    //
+    // Last, the block is softened a little: a small smooth kernel
+    // (1 4 1) is run over it each way. Out towards the old edge
+    // the picture magnifies the strip, by up to the perspective
+    // factor, and render_half() fills the blocks that the strip's
+    // pixels become by linear interpolation. That gives a slanted
+    // edge teeth, one for every column of the strip it crosses,
+    // and a turned gel is slanted edges all over. The kernel and
+    // the interpolation together come close to a cubic B-spline,
+    // which has no teeth and does not ring, so the edge comes out
+    // as one even line. For the kernel to have neighbours at the
+    // ends of the block, a column more is cut at either end, at
+    // the moments just before and just after, and dropped again.
+    //
+    // The geometry is that of GelSource::transformed() followed by
+    // prepare(): mirrored first, then turned about the centre, laid
+    // on its side for a horizontal scan, and scaled to the strip.
+    void turning_block(const SideState& s, double u_prev, double u_cur
+                       , double a_prev, double a_cur
+                       , int block_w, int high, cv::Mat& block) const {
+      const cv::Mat& frame = s.frame;
+      const bool flat = lying_flat();
+      const double frame_w = frame.cols;
+      const double frame_h = frame.rows;
+      const double across = flat ? frame_h : frame_w; // what the slit sweeps over
+      const double along  = flat ? frame_w : frame_h; // what the slit lies along
+      const double centre_x = frame_w / 2.0;          // as rotate() has it
+      const double centre_y = frame_h / 2.0;
+
+      // frame pixels to one pixel of the block, down and across
+      const double per_row = along / high;
+      const double travel = std::abs(u_cur - u_prev) * across / block_w;
+      const double arc = std::abs(a_cur - a_prev) * (CV_PI / 180.0) / block_w
+                         * 0.5 * std::hypot(frame_w, frame_h);
+      const int ny = std::clamp(int(std::ceil(per_row)), 1, max_samples_down);
+      const int nx = std::clamp(int(std::ceil(std::max(travel, arc))), 1, max_samples_across);
+      // a column more at either end, for the softening
+      const bool softened = turned_softness > 0.0;
+      const int margin = softened ? 1 : 0;
+      const int cut_w = block_w + 2 * margin;
+      const int cols = cut_w * nx;
+      const int rows = high * ny;
+
+      // per column: where the slit is, and the gel's angle
+      std::vector<double> slit_x(cols), cosine(cols), sine(cols);
+      for (int c = 0; c < cols; ++c) {
+        // 0 is now, 1 the last tick; the margins lie outside that
+        const double back = (c + 0.5 - margin * nx) / (block_w * nx);
+        slit_x[c] = (u_cur + (u_prev - u_cur) * back) * across - 0.5;
+        const double angle = (a_cur + (a_prev - a_cur) * back) * (CV_PI / 180.0);
+        cosine[c] = std::cos(angle);
+        sine[c] = std::sin(angle);
+      }
+
+      // where each point of the block is to be read from the frame
+      cv::Mat map_x(rows, cols, CV_32FC1);
+      cv::Mat map_y(rows, cols, CV_32FC1);
+      for (int r = 0; r < rows; ++r) {
+        const double slit_y = (r + 0.5) * along / rows - 0.5;
+        float* mx = map_x.ptr<float>(r);
+        float* my = map_y.ptr<float>(r);
+        for (int c = 0; c < cols; ++c) {
+          // the point in the turned picture, from its centre...
+          const double dx = (flat ? slit_y : slit_x[c]) - centre_x;
+          const double dy = (flat ? slit_x[c] : slit_y) - centre_y;
+          // ...turned back to where it is in the picture as it came
+          double x = centre_x + cosine[c] * dx - sine[c] * dy;
+          const double y = centre_y + sine[c] * dx + cosine[c] * dy;
+          if (s.pose.flip)
+            x = (frame_w - 1.0) - x;
+          mx[c] = float(x);
+          my[c] = float(y);
+        }
+      }
+
+      const float side = float(turned_softness / 6.0);
+      const cv::Mat kernel = (cv::Mat_<float>(1, 3) << side, 1.0f - 2.0f * side, side);
+
+      auto cut = [&](const cv::Mat& from, cv::Mat& to) {
+        cv::Mat fine;
+        cv::remap(from, fine, map_x, map_y, cv::INTER_CUBIC
+                  , cv::BORDER_CONSTANT, cv::Scalar::all(0));
+        cv::Mat whole;
+        if (nx == 1 && ny == 1)
+          whole = fine;
+        else
+          cv::resize(fine, whole, cv::Size(cut_w, high), 0, 0, cv::INTER_AREA);
+        if (!softened) {
+          to = whole;
+          return;
+        }
+        cv::Mat soft;
+        cv::sepFilter2D(whole, soft, -1, kernel, kernel
+                        , cv::Point(-1, -1), 0, cv::BORDER_REPLICATE);
+        to = soft(cv::Rect(margin, 0, block_w, high)).clone();
+      };
+      cut(frame, block);
+
+      // A picture that moves by itself (a video, a camera): the
+      // frame is another one than at the last tick. As in
+      // faded_block(), the block fades from that one to this.
+      if (s.frame_changed && s.prev_frame.size() == frame.size()
+          && s.prev_frame.type() == frame.type()) {
+        cv::Mat older;
+        cut(s.prev_frame, older);
+        for (int c = 0; c < block_w; ++c) {
+          const double now = 1.0 - (c + 0.5) / block_w; // 1 newest, 0 oldest
+          cv::Mat target = block.col(c);
+          cv::addWeighted(older.col(c), 1.0 - now, block.col(c), now, 0.0, target);
+        }
+      }
+    }
+
+    // `from` to `tick` is the stretch of time the new slits stand for.
     void add_slits(SideState& s, int slits, bool sweeps
-                   , bool sequence, std::atomic<bool>& pass_finished) {
+                   , bool sequence, std::atomic<bool>& pass_finished
+                   , time_stamp from, time_stamp tick) {
       if (slits <= 0 || s.frame.empty())
         return;
 
@@ -727,16 +920,25 @@ namespace Gel {
       s.have_prev = true;
 
       // all the new slits as one seamless block of picture
-      prepare(s);
       const int block_w = slits * sw;
       cv::Mat block;
-      if (u_prev != u_cur) {
-        swept_block(s.prepared, u_prev * s.prepared.cols, u_cur * s.prepared.cols
-                    , block_w, block);
+      if (s.pose.turns()) {
+        // a gel that is turned: each column at its own angle
+        turning_block(s, u_prev, u_cur
+                      , s.pose.angle_at(from), s.pose.angle_at(tick)
+                      , block_w, high, block);
         s.prev_column = block.col(0).clone();
       } else {
-        faded_block(s, s.prepared, u_cur, block_w, block);
+        prepare(s);
+        if (u_prev != u_cur) {
+          swept_block(s.prepared, u_prev * s.prepared.cols, u_cur * s.prepared.cols
+                      , block_w, block);
+          s.prev_column = block.col(0).clone();
+        } else {
+          faded_block(s, s.prepared, u_cur, block_w, block);
+        }
       }
+      s.frame_changed = false;
 
       // and into the strip it goes, a slit at a time, leaving the
       // spacing between them. Slit 0 is the newest, at x = 0.

@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Project name and version
-project(slit-scan VERSION 0.2.0 LANGUAGES CXX C)
+project(slit-scan VERSION 0.2.2 LANGUAGES CXX C)
 
 # The application's ID, which names its desktop file, icon and
 # metadata, and which Wayland and Flatpak know it by.

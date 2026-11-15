@@ -2,7 +2,7 @@
 
 pkgname=slit-scan
 pkgver=0.2.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Streaming slit-scan animations from images, videos and a camera"
 arch=('x86_64' 'aarch64')
 url="https://github.com/flajann2/slit-scan-cpp"
@@ -16,7 +16,7 @@ source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('bcbdf4e4c32fab469f595cb8397df9fc9e97617ac7b087d7575a890684bbec14')
 
 build() {
-  cmake -B build -S "$pkgname-cpp-$pkgver" -G Ninja \
+  cmake --fresh -B build -S "$pkgname-cpp-$pkgver" -G Ninja \
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DENABLE_PLAYGROUND=OFF \

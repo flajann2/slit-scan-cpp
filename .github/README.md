@@ -60,8 +60,9 @@ With gels on both sides, each half has its own gel. The **horizontal** slit scan
 -   **Three kinds of gel**: still images (JPEG, PNG, GIF, WebP), videos (anything FFmpeg can read) and a live camera.
 -   **Any number of gels on each side**, taking turns in order and starting over at the top. Drag them to reorder them, or across to the other side; remove them with a click.
 -   **Per-gel rotation, spin and flip**, with a live, spinning preview.
--   **Smooth, anti-aliased output**: the slit and the perspective are filtered, so fine detail streams without jaggies or shimmer.
+-   **Smooth, anti-aliased output**: the slit and the perspective are filtered, so fine detail streams without jaggies or shimmer. A spinning gel is turned slit by slit, each at the angle of its own moment, so it streams out in smooth curves and not in steps.
 -   **Live control**: slit width, spacing, perspective and sweep speed take effect while the scan is playing.
+-   **A time counter** that shows where each frame is in the video, to the millisecond.
 -   **Recording** to MP4, MKV, MOV, WebM, AVI or Ogg, in H.264, H.265, VP9 or AV1, at resolutions up to 7680 × 4320.
 -   **Setups** saved as plain, readable YAML files.
 -   **Sharing**: export a setup and all its gels as one `.hal` file, and import someone else's with one click.
@@ -154,6 +155,8 @@ sudo cmake --install build
 
 The window and dialogs are designed in [Cambalache](https://gitlab.gnome.org/jpu/cambalache). The project file is `gui/ui/slitscan_main.cmb`; the `.ui` files beside it, and `resources.c`, are generated from it and are committed too, so an ordinary build does not need Cambalache at all.
 
+If a `.ui` file is newer than `resources.c`, whether Cambalache wrote it or it was edited by hand, the build compiles the resource again; that takes only `glib-compile-resources`, which comes with GLib.
+
 If the `.cmb` file is newer than the files made from it, the build runs Cambalache to regenerate them. It expects the Flatpak version:
 
 ```shell
@@ -200,6 +203,7 @@ touch gui/ui/*.ui gui/ui/resources.c
 -   **Across the top**: Load, Save, Save as, Import, Export, New and Settings. See [Setups: saving and sharing](#setups-saving-and-sharing) and [Settings](#settings).
 -   **Left and right**: the gels of each side, with the buttons to add them.
 -   **In the middle**: the slit scan, scaled to fit the window. It is made, and recorded, at the resolution set in Video Setup.
+-   **Above the slit scan**: the time counter, as minutes, seconds and milliseconds (`mm:ss:nnn`). It says where the frame on show is in the run, counted in frames at the frame rate of Video Setup, and not by the clock: it stands still while PLAY is off, and RESTART and New set it back to zero. In a recording started at the beginning of the run, it is the frame's time in the file.
 -   **Along the bottom**:
     -   **PLAY** starts the scan, and stops it when clicked again.
     -   **RESTART** starts the scan over from the beginning: the picture goes black, each side goes back to its first gel, videos rewind, and spinning gels return to where they started. If PLAY is on it goes straight on playing; if not, it is ready to.
@@ -272,7 +276,27 @@ A Slit Sweep Rate of 0 holds the slit still in the centre of the gel. The slit a
 
 While a box does not hold a number (as when you clear it to type a new one) it is marked in red, and the setting keeps its old value.
 
-The **Video** page is reserved for later.
+The **Video** page has the folder recordings are written to. Type it in, or click **Choose…** for a folder dialog. Left empty, recordings go to your Videos folder. A folder that does not exist yet is made when the first recording goes into it.
+
+
+### Where the settings are kept
+
+What you set in Settings is yours, not a setup's. It is written to `~/.config/slitscan/config.yaml` when you close the dialog, and read again the next time Slit Scan starts:
+
+```yaml
+# Slit Scan settings, as set in the Settings dialog
+slitscan_config: 1
+settings:
+  slit_width: 3
+  slit_spacing: 0
+  perspective_factor: 10
+  sweep_rate: 0.05
+  video_folder: ""     # empty for your Videos folder
+```
+
+A setup has settings of its own. When you **Load** or **Import** one, what it says overrides yours for as long as the setup is in use, and what it does not mention stays as you have it. Your own file is not changed by that: it changes only when you change something in the dialog, and then only in what you changed. **New** brings your own settings back.
+
+(`$XDG_CONFIG_HOME/slitscan`, if that is set. The same folder holds `state.ini`, where the folders last used in the file dialogs are remembered.)
 
 
 <a id="video-setup"></a>
@@ -321,7 +345,7 @@ Click **REC** again to finish. The file is closed in the background, and REC's t
 
 Stopping PLAY pauses a recording; it carries on in the same file when PLAY is pressed again.
 
-Recordings go to your Videos folder (or your home folder, if there is none), named for the time they were started, such as `slitscan-20261111-164730.mp4`. To record to a particular file instead, set `output` in the setup file (see below).
+Recordings go to the folder set on the Video page of [Settings](#settings), which is your Videos folder (or your home folder, if there is none) unless you choose another. They are named for the time they were started, such as `slitscan-20261111-164730.mp4`. To record to a particular file instead, set `output` in the setup file (see below).
 
 When the `ffmpeg` program is installed, Slit Scan uses it to encode, with settings chosen to keep up with the scan as it happens, and writes files that phones and messaging apps play: `yuv420p`, and for MP4 and MOV the index at the front of the file. Without it, OpenCV's own writer is used; it offers fewer codecs, and some of them cannot keep up in real time.
 
@@ -359,6 +383,7 @@ settings:
   slit_spacing: 0
   perspective_factor: 10
   sweep_rate: 0.05
+  video_folder: ""     # where REC writes; empty for your Videos folder
 video:
   width: 1280
   height: 800
@@ -366,7 +391,8 @@ video:
   format: mp4
   codec: h264          # h264, h265, vp9, av1
   effect: vertical     # vertical, horizontal
-  output: ""           # where REC writes; empty for your Videos folder
+  output: ""           # the very file REC writes; empty for a new one
+                       # each time, in video_folder
 gels:
   left:
     - kind: image      # image, video, camera
@@ -384,7 +410,7 @@ gels:
 
 A gel in the same folder as the setup file, or in a folder below it, is saved with a path relative to the setup file. Keep a setup and its gels together in one folder, and the folder can be moved or copied anywhere and still works. Gels elsewhere are saved with their full path.
 
-Anything missing from a setup file takes its default.
+Anything missing from a setup file takes its default, except under `settings`, where it stays as you have it in [Settings](#settings). A `video_folder` that is not on your computer, as in a setup someone else made, is passed over in favour of yours.
 
 
 ## Sharing: Export and Import
@@ -412,7 +438,7 @@ Some details:
 | Folder          | What is in it                                                            |
 |--------------- |------------------------------------------------------------------------ |
 | `main/`         | The program's entry point                                                |
-| `gui/include/`  | The main window, the dialogs, setups and sharing                         |
+| `gui/include/`  | The main window, the dialogs, settings, setups and sharing               |
 | `gui/ui/`       | The Cambalache project, and the UI files and resources made from it      |
 | `gels/include/` | Gel sources, the scanner (`SlitScan.h`), the recorder and video encoding |
 | `maths/`        | Reserved                                                                 |
@@ -424,22 +450,23 @@ Some details:
 
 ## How it fits together
 
--   Each gel has a *source* (`ImageGelSource`, `VideoGelSource`, `CameraGelSource`), which applies the gel's rotation, spin and flip and broadcasts its frames.
+-   Each gel has a *source* (`ImageGelSource`, `VideoGelSource`, `CameraGelSource`), which broadcasts its frames as they come, together with the gel's rotation, spin and flip.
 -   A *master tick server* sets the pace, at the Video Setup frame rate.
--   The *scanner* (`Gel::SlitScan`) runs in a thread of its own. It cuts the slits, keeps the strips, renders the perspective, and hands each finished picture back to the window.
+-   The *scanner* (`Gel::SlitScan`) runs in a thread of its own. It cuts the slits, turning and mirroring the gel as it does, keeps the strips, renders the perspective, and hands each finished picture back to the window.
 -   The *recorder* (`Gel::Recorder`) writes the pictures to a video file, also in a thread of its own, so the buttons never wait for the encoder.
+-   Where files are kept on the system (the settings, the remembered state, the default folder for recordings) is decided in one place, `gui/include/Paths.h`. That is where the conventions of macOS and Windows go when Slit Scan is ported to them.
 
 
 ## Things you can tune
 
-| Constant              | File                            | Default | What it controls                                                    |
-|--------------------- |------------------------------- |------- |------------------------------------------------------------------- |
-| `rate_minutes`        | `gui/include/GelConfig.h`       | 1.0     | The Rate slider is revolutions per this many minutes                |
-| `endless_gel_seconds` | `gui/include/GelSelection.h`    | 10.0    | How long a camera, or a still image with no sweep, has for its turn |
-| `splash_seconds`      | `gui/include/Splash.h`          | 3.0     | How long the splash screen stays                                    |
-| `slits_per_second`    | `gels/include/SlitScan.h`       | 30.0    | How many slits are cut per second, whatever the frame rate          |
-| `spin_size`           | `gels/include/ImageGelSource.h` | 2160    | A spinning image is scaled to this many pixels before turning       |
-| `defaults()`          | `gui/include/MainSettings.h`    |         | The Settings a new setup starts with                                |
+| Constant              | File                         | Default | What it controls                                                    |
+|--------------------- |---------------------------- |------- |------------------------------------------------------------------- |
+| `rate_minutes`        | `gui/include/GelConfig.h`    | 1.0     | The Rate slider is revolutions per this many minutes                |
+| `endless_gel_seconds` | `gui/include/GelSelection.h` | 10.0    | How long a camera, or a still image with no sweep, has for its turn |
+| `splash_seconds`      | `gui/include/Splash.h`       | 3.0     | How long the splash screen stays                                    |
+| `slits_per_second`    | `gels/include/SlitScan.h`    | 30.0    | How many slits are cut per second, whatever the frame rate          |
+| `turned_softness`     | `gels/include/SlitScan.h`    | 1.0     | How much a rotated or spinning gel is softened; 0 is not at all     |
+| `defaults()`          | `gui/include/MainSettings.h` |         | The Settings a new setup starts with                                |
 
 The encoder settings for each codec (quality and speed) are in `gels/include/VideoEncoding.h`.
 

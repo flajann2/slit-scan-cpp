@@ -50,13 +50,34 @@ target_link_libraries(GuiLib PRIVATE PkgConfig::LIBZIP)
 if (SLITSCAN_REGENERATE_UI)
   set(CAMBALACHE "/var/lib/flatpak/exports/bin/ar.xjuan.Cambalache"
       CACHE FILEPATH "Cambalache, which makes the UI files")
+
+  # every .ui file that goes into the resource; see gresource.xml
+  set(UI_FILES
+    ${CMBO}
+    "${UI_SOURCE_DIR}/slitscan_main_settings.ui"
+    "${UI_SOURCE_DIR}/file_gel_select.ui"
+    "${UI_SOURCE_DIR}/gel_config.ui"
+    "${UI_SOURCE_DIR}/video_config.ui")
+
+  # the Cambalache project is newer than what was made from it:
+  # have Cambalache write the .ui files again
   add_custom_command(
-    OUTPUT ${CMBO} ${CREC}
+    OUTPUT ${CMBO}
     COMMAND ${CAMBALACHE} -E ${CMB}
-    COMMAND glib-compile-resources ${CREX} --target=${CREC} --generate-source -C clang
-    DEPENDS ${CMB} ${CREX}
+    DEPENDS ${CMB}
     WORKING_DIRECTORY ${UI_SOURCE_DIR}
-    COMMENT "generate the ui files, then the resource"
+    COMMENT "generate the ui files"
+    VERBATIM
+  )
+
+  # a .ui file is newer than the resource, whoever changed it:
+  # compile the resource again
+  add_custom_command(
+    OUTPUT ${CREC}
+    COMMAND glib-compile-resources ${CREX} --target=${CREC} --generate-source -C clang
+    DEPENDS ${UI_FILES} ${CREX}
+    WORKING_DIRECTORY ${UI_SOURCE_DIR}
+    COMMENT "compile the ui files into the resource"
     VERBATIM
   )
 

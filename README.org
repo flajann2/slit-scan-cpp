@@ -94,6 +94,8 @@ from another./
   moment, so it streams out in smooth curves and not in steps.
 + *Live control*: slit width, spacing, perspective and sweep speed
   take effect while the scan is playing.
++ *A time counter* that shows where each frame is in the video, to
+  the millisecond.
 + *Recording* to MP4, MKV, MOV, WebM, AVI or Ogg, in H.264, H.265,
   VP9 or AV1, at resolutions up to 7680 × 4320.
 + *Setups* saved as plain, readable YAML files.
@@ -193,6 +195,11 @@ file is =gui/ui/slitscan_main.cmb=; the =.ui= files beside it, and
 =resources.c=, are generated from it and are committed too, so an
 ordinary build does not need Cambalache at all.
 
+If a =.ui= file is newer than =resources.c=, whether Cambalache
+wrote it or it was edited by hand, the build compiles the resource
+again; that takes only =glib-compile-resources=, which comes with
+GLib.
+
 If the =.cmb= file is newer than the files made from it, the build
 runs Cambalache to regenerate them. It expects the Flatpak version:
 
@@ -247,6 +254,12 @@ click or a key./
   them.
 + *In the middle*: the slit scan, scaled to fit the window. It is
   made, and recorded, at the resolution set in Video Setup.
++ *Above the slit scan*: the time counter, as minutes, seconds and
+  milliseconds (=mm:ss:nnn=). It says where the frame on show is in
+  the run, counted in frames at the frame rate of Video Setup, and
+  not by the clock: it stands still while PLAY is off, and RESTART
+  and New set it back to zero. In a recording started at the
+  beginning of the run, it is the frame's time in the file.
 + *Along the bottom*:
   - *PLAY* starts the scan, and stops it when clicked again.
   - *RESTART* starts the scan over from the beginning: the picture

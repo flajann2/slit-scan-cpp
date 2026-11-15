@@ -209,6 +209,7 @@ namespace Gel {
         lockguard lock(out_mutex);
         out_frame.release(); // a frame on its way to the GUI is void
       }
+      emitted_index = -1;
       Job job;
       job.kind = Job::Kind::Clear;
       jobs.try_enqueue(std::move(job));
@@ -229,6 +230,16 @@ namespace Gel {
     // The finished frames, RGB, emitted in the GUI thread.
     sig_next_frame& signal_next_frame() { return m_sig_next_frame; }
 
+    // Which frame it is that signal_next_frame() is emitting, or
+    // has last emitted: 0 for the first one made since the scanner
+    // started or was last cleared, and one more for each one made
+    // after it, whether it was shown or not. Every frame made is
+    // also the next frame of a recording, so this is the frame's
+    // place in the run, counted in frames: divided by the frame
+    // rate it is the frame's time. -1 before there has been one.
+    // For the GUI thread.
+    long long frame_index() const { return emitted_index; }
+
     // Emitted in the GUI thread when the slit has crossed the whole
     // of a gel on a side that has several (see Params). This is
     // the moment to send that side its next gel.
@@ -248,13 +259,17 @@ namespace Gel {
     void on_frame_ready() {
       cv::Mat frame;
       time_stamp ts;
+      long long index = -1;
       {
         lockguard lock(out_mutex);
         frame = out_frame;
         ts = out_ts;
+        index = out_index;
       }
-      if (!frame.empty())
+      if (!frame.empty()) {
+        emitted_index = index;
         m_sig_next_frame.emit(frame, ts);
+      }
     }
 
     // GUI thread, by way of the dispatcher.
@@ -324,9 +339,12 @@ namespace Gel {
     std::atomic<bool> drop_right_requested{false};
     std::atomic<bool> pass_finished_left{false};  // set by the worker,
     std::atomic<bool> pass_finished_right{false}; // taken by the GUI
-    std::mutex out_mutex; // guards out_frame and out_ts
+    std::mutex out_mutex; // guards out_frame, out_ts and out_index
     cv::Mat out_frame;
     time_stamp out_ts;
+    long long out_index = -1;     // which frame out_frame is; see frame_index()
+    long long emitted_index = -1; // GUI thread: the one last emitted
+    long long frames_made = 0;    // worker: since the start, or the last wipe
 
     // The recording. It has a thread of its own; see Recorder.h.
     Recorder recorder;
@@ -477,6 +495,7 @@ namespace Gel {
       }
       slit_debt = 0.0;
       have_last_tick = false;
+      frames_made = 0; // the run starts over, and so does its count
     }
 
     SideState& side_state(Side side) {
@@ -1036,9 +1055,15 @@ namespace Gel {
 
       {
         lockguard lock(out_mutex);
-        out_frame = out;
-        out_ts = tick;
+        // not if the scanner has just been cleared: this frame is
+        // from before, and would turn up in the new run.
+        if (!clear_requested.load()) {
+          out_frame = out;
+          out_ts = tick;
+          out_index = frames_made;
+        }
       }
+      ++frames_made;
       m_dispatcher.emit();
     }
   };

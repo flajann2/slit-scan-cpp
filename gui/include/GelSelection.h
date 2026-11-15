@@ -30,6 +30,10 @@ namespace Gui {
       gel_chooser = builder->get_object<Gtk::FileChooserNative>(ss::file_gel_chooser);
       float_over_main_window(*gel_chooser);
       canvas = builder->get_object<Gtk::DrawingArea>(ss::main_canvas);
+      time_counter = builder->get_object<Gtk::Label>(ss::main_time_counter);
+      if (time_counter)
+        time_counter->add_css_class("numeric"); // digits all one width, so it does not jitter
+      show_time_counter();
 
       toggle_play   = builder->get_object<Gtk::ToggleButton>(ss::main_toggle_play);
       restart_button = builder->get_object<Gtk::Button>(ss::main_restart);
@@ -380,6 +384,7 @@ namespace Gui {
 
       scan_frame.release();
       canvas->queue_draw();
+      zero_time_counter();
       if (playing)
         slit_scan->resume();
       refresh_active_gels();
@@ -423,6 +428,7 @@ namespace Gui {
       slit_scan->clear();
       scan_frame.release();
       canvas->queue_draw();
+      zero_time_counter();
 
       main_settings_dialog->reset();
       video_config_dialog->reset();
@@ -746,6 +752,7 @@ namespace Gui {
 
         slit_scan->configure(scan_params());
         slit_scan->resume();
+        set_counter_rate(fps);
         // the time a gel has had its turn for counts from now
         left_turn.started = right_turn.started = Gel::time_basis::now();
         refresh_active_gels();
@@ -1007,6 +1014,59 @@ namespace Gui {
         return; // a straggler from before PLAY went off, or New was clicked
       scan_frame = frame;
       canvas->queue_draw();
+      counter_frame = slit_scan->frame_index();
+      show_time_counter();
+    }
+
+    //// The time counter, above the picture.
+    //
+    // It says where the frame on show is in the run: the time at
+    // which it comes in a video of the run, as mm:ss:nnn, nnn being
+    // milliseconds. That is not the time on the clock. It is
+    // counted in frames: the scanner numbers the frames it makes
+    // from 0, and each one lasts 1 / fps seconds, fps being the
+    // frame rate of the video configuration. So the counter stands
+    // still while PLAY is off, does not run ahead if the machine
+    // cannot keep up, and is at 0 again after RESTART and New.
+    //
+    // A recording gets every frame that is made, so for a recording
+    // that was started at the beginning of the run, this is the
+    // frame's time in the file.
+    //
+    // The frame rate can be another one each time PLAY goes on.
+    // What has gone before keeps the time it took, and the frames
+    // from there on count at the new rate: see set_counter_rate().
+
+    // where frame number `frame` is in the run, in seconds
+    double counter_seconds(long long frame) const {
+      return counter_base_seconds + double(frame - counter_base_frame) / counter_fps;
+    }
+
+    // From the next frame on, frames last 1 / fps seconds.
+    void set_counter_rate(double fps) {
+      // (the scanner's own count, not the frame on show: a frame
+      // made just as PLAY went off was not shown, but it counts.)
+      const long long next = slit_scan->frame_index() + 1;
+      counter_base_seconds = counter_seconds(next);
+      counter_base_frame = next;
+      counter_fps = fps;
+    }
+
+    // the run starts over
+    void zero_time_counter() {
+      counter_frame = -1;
+      counter_base_frame = 0;
+      counter_base_seconds = 0.0;
+      show_time_counter();
+    }
+
+    void show_time_counter() {
+      if (!time_counter)
+        return;
+      const double seconds = (counter_frame < 0) ? 0.0 : counter_seconds(counter_frame);
+      const long long ms = std::llround(seconds * 1000.0);
+      time_counter->set_text(std::format("{:02}:{:02}:{:03}"
+                                         , ms / 60000, (ms / 1000) % 60, ms % 1000));
     }
 
     void on_draw(const Cairo::RefPtr<Cairo::Context>& cr
@@ -1025,6 +1085,12 @@ namespace Gui {
     Gel::IMasterTickServer ticker;
     bool playing = false;
     cv::Mat scan_frame; // the latest finished frame, for the canvas
+
+    // the time counter; see show_time_counter()
+    long long counter_frame = -1;      // the frame on show, as the scanner numbers it; -1 for none
+    double counter_fps = 30.0;         // frames per second, from counter_base_frame on
+    long long counter_base_frame = 0;  // this frame...
+    double counter_base_seconds = 0.0; // ...is at this time
     Turn left_turn;     // whose turn it is among the left gels
     Turn right_turn;    //                       and the right
     std::string recording_to; // the file being recorded, or last recorded
@@ -1052,6 +1118,7 @@ namespace Gui {
     shared_ptr<Gtk::ListBox> gel_left_listbox;
     shared_ptr<Gtk::ListBox> gel_right_listbox;
     shared_ptr<Gtk::DrawingArea> canvas;
+    shared_ptr<Gtk::Label> time_counter;
 
     shared_ptr<Gtk::ToggleButton> toggle_play;
     shared_ptr<Gtk::Button> video_setup;

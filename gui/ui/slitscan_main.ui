@@ -96,14 +96,27 @@
           </object>
         </child>
         <child>
+          <object class="GtkLabel" id="ss_main_time_counter">
+            <property name="halign">center</property>
+            <property name="label">00:00:000</property>
+            <property name="tooltip-text">Where the picture is in the run: minutes, seconds and milliseconds, counted in frames at the configured frame rate</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="column-span">3</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
           <object class="GtkDrawingArea" id="ss_main_canvas">
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <layout>
               <property name="column">2</property>
               <property name="column-span">3</property>
-              <property name="row">1</property>
-              <property name="row-span">5</property>
+              <property name="row">2</property>
+              <property name="row-span">4</property>
             </layout>
           </object>
         </child>

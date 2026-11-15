@@ -69,6 +69,9 @@
                         <col id="0">Full HD: 1920 × 1080 (16:9)</col>
                       </row>
                       <row>
+                        <col id="0">WUXGA: 1920 × 1200 (16:10)</col>
+                      </row>
+                      <row>
                         <col id="0">QHD: 2560 × 1440 (16:9)</col>
                       </row>
                       <row>

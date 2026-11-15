@@ -75,9 +75,15 @@
   </supports>
 
   <releases>
-    <release version="0.1.0" date="2026-11-12">
+    <release version="0.2.0" date="2026-11-15">
       <description>
-        <p>The first release.</p>
+        <ul>
+          <li>Rotated and spinning gels stream out smoothly instead of in steps</li>
+          <li>A time counter above the picture, in minutes, seconds and milliseconds</li>
+          <li>Settings are remembered between runs, in ~/.config/slitscan/config.yaml</li>
+          <li>The folder recordings go to can be chosen in Settings</li>
+          <li>File dialogs open in the folder last used</li>
+        </ul>
       </description>
     </release>
   </releases>

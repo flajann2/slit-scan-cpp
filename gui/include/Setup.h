@@ -14,6 +14,7 @@
 //     slit_spacing: 0
 //     perspective_factor: 10
 //     sweep_rate: 0.05
+//     video_folder: ""     # where REC writes; empty for ~/Videos
 //   video:
 //     width: 1280
 //     height: 800
@@ -21,7 +22,8 @@
 //     format: mp4
 //     codec: h264          # h264, h265, vp9, av1
 //     effect: vertical     # vertical, horizontal
-//     output: ""           # where REC writes; empty for ~/Videos
+//     output: ""           # the very file REC writes; empty for a new
+//                          # one each time, in the settings' video_folder
 //   gels:
 //     left:
 //       - kind: image      # image, video, camera
@@ -40,7 +42,10 @@
 // with its full pathname.
 //
 // Anything missing from a file takes its default, so files written
-// by an older version still load.
+// by an older version still load. The `settings` are different:
+// they are laid over the user's own (see Settings.h), so what the
+// file says overrides those and what it leaves out stays as the
+// user has it.
 #pragma once
 
 #include <filesystem>
@@ -123,15 +128,12 @@ namespace Gui {
     // `folder`.
     std::string to_yaml(const std::filesystem::path& folder) const {
       YAML::Emitter out;
+      out.SetDoublePrecision(15); // 0.05, not 0.050000000000000003
       out << YAML::BeginMap;
       out << YAML::Key << "slitscan" << YAML::Value << file_version;
 
-      out << YAML::Key << "settings" << YAML::Value << YAML::BeginMap;
-      out << YAML::Key << "slit_width"         << YAML::Value << settings.slit_width;
-      out << YAML::Key << "slit_spacing"       << YAML::Value << settings.slit_spacing;
-      out << YAML::Key << "perspective_factor" << YAML::Value << settings.perspective_factor;
-      out << YAML::Key << "sweep_rate"         << YAML::Value << settings.sweep_rate;
-      out << YAML::EndMap;
+      out << YAML::Key << "settings" << YAML::Value;
+      settings.write(out);
 
       out << YAML::Key << "video" << YAML::Value << YAML::BeginMap;
       out << YAML::Key << "width"  << YAML::Value << video.res_width;
@@ -184,7 +186,12 @@ namespace Gui {
     // words fit for the user, if the file cannot be read or is not
     // a setup at all. Things in it that we can make nothing of are
     // left at their defaults and noted in `warnings`.
-    static Setup load(const std::string& pathname, std::vector<std::string>& warnings) {
+    //
+    // `user_settings` are the user's own settings. The file's are
+    // laid over them: what it says wins, and what it does not
+    // mention stays as the user has it.
+    static Setup load(const std::string& pathname, std::vector<std::string>& warnings
+                      , const MainSettings::Settings& user_settings = MainSettings::defaults()) {
       YAML::Node root;
       try {
         root = YAML::LoadFile(pathname);
@@ -200,16 +207,23 @@ namespace Gui {
       const auto folder = std::filesystem::absolute(pathname).parent_path();
 
       Setup setup;
+      setup.settings = user_settings;
       try {
         if (root["slitscan"].as<int>(file_version) > file_version)
           warnings.push_back("This file was written by a newer Slit Scan; "
                              "some of it may be ignored.");
 
-        if (const YAML::Node s = root["settings"]; s && s.IsMap()) {
-          setup.settings.slit_width         = s["slit_width"].as<int>(setup.settings.slit_width);
-          setup.settings.slit_spacing       = s["slit_spacing"].as<int>(setup.settings.slit_spacing);
-          setup.settings.perspective_factor = s["perspective_factor"].as<double>(setup.settings.perspective_factor);
-          setup.settings.sweep_rate         = s["sweep_rate"].as<double>(setup.settings.sweep_rate);
+        setup.settings.read(root["settings"], warnings);
+
+        // A folder for recordings that is not on this computer (the
+        // setup came from someone else's) is no use here, and is not
+        // one to be made behind the user's back either.
+        if (setup.settings.video_folder != user_settings.video_folder
+            && !setup.settings.video_folder.empty()
+            && !Glib::file_test(Paths::expanded(setup.settings.video_folder), Glib::FileTest::IS_DIR)) {
+          warnings.push_back("The setup's folder for recordings, " + setup.settings.video_folder
+                             + ", is not on this computer; yours is used.");
+          setup.settings.video_folder = user_settings.video_folder;
         }
 
         if (const YAML::Node v = root["video"]; v && v.IsMap()) {

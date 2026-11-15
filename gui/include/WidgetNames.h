@@ -42,6 +42,8 @@ namespace ss {
   const std::string main_settings_p1_sweep_e      = "ss_main_settings_p1_sweep_e";
 
   const std::string main_settings_note_p2_video   = "ss_main_settings_note_p2_video";
+  const std::string main_settings_p2_folder_e     = "ss_main_settings_p2_folder_e";
+  const std::string b_main_settings_p2_folder     = "ssb_main_settings_p2_folder";
 
   // dialog configuration of individual gels -- images, camera, video
   const std::string gel_config           = "ss_gel_config";

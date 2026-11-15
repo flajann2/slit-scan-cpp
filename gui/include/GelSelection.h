@@ -44,6 +44,17 @@ namespace Gui {
       main_settings_dialog = MainSettings::create();
       video_config_dialog = VideoConfig::create();
 
+      // the user's own settings, from their file; see Settings.h
+      {
+        std::vector<std::string> warnings;
+        user_settings = Config::load(warnings);
+        for (const auto& warning : warnings)
+          std::cerr << warning << std::endl;
+        main_settings_dialog->set(user_settings);
+        main_settings_dialog->signal_edited().connect(
+          sigc::mem_fun(*this, &GelSelection::on_settings_edited));
+      }
+
       // the slit scanner, and the canvas it paints to
       slit_scan = make_unique<Gel::SlitScan>();
       slit_scan->signal_next_frame().connect(sigc::mem_fun(*this, &GelSelection::on_scan_frame));
@@ -300,7 +311,7 @@ namespace Gui {
       Setup setup;
       std::vector<std::string> notes; // what could not be had, for the user
       try {
-        setup = Setup::load(pathname, notes);
+        setup = Setup::load(pathname, notes, user_settings);
       } catch (const std::exception& e) {
         tell_user("The setup was not loaded.", e.what());
         return false;
@@ -430,7 +441,7 @@ namespace Gui {
       canvas->queue_draw();
       zero_time_counter();
 
-      main_settings_dialog->reset();
+      main_settings_dialog->set(user_settings); // as the user has them, with no setup to say otherwise
       video_config_dialog->reset();
 
       recording_to.clear();
@@ -442,6 +453,21 @@ namespace Gui {
     void on_settings() {
       cout << "Settings clicked." << endl;
       main_settings_dialog->show();
+    }
+
+    // The user has changed something in the Settings dialog. What
+    // was changed, and only that, goes into the user's own settings
+    // and so into their file: what a loaded setup has laid over
+    // them stays the setup's business. See Settings.h.
+    void on_settings_edited(const MainSettings::Settings& before
+                            , const MainSettings::Settings& after) {
+      user_settings.take_changes(before, after);
+      try {
+        Config::save(user_settings);
+        cout << "Saved the settings to " << Paths::config_file() << endl;
+      } catch (const std::exception& e) {
+        tell_user("The settings were not saved.", e.what());
+      }
     }
     
     void on_left_gel() {
@@ -727,14 +753,16 @@ namespace Gui {
 
     // Where a recording goes: the path from the video configuration
     // if there is one, and otherwise a new file, named for the
-    // time, in the user's Videos folder.
+    // time, in the folder set in the Settings dialog, which is the
+    // user's Videos folder unless another was chosen.
     std::string recording_pathname(const VideoConfig::Configuration& vc) {
       if (!vc.pathnname.empty())
         return vc.pathnname;
 
-      std::string dir = Glib::get_user_special_dir(Glib::UserDirectory::VIDEOS);
-      if (dir.empty() || !Glib::file_test(dir, Glib::FileTest::IS_DIR))
-        dir = Glib::get_home_dir();
+      std::string note;
+      const std::string dir = Paths::video_folder(obtain_main_settings().video_folder, note);
+      if (!note.empty())
+        cout << note << endl;
 
       const auto stamp = Glib::DateTime::create_now_local().format("%Y%m%d-%H%M%S");
       return Glib::build_filename(dir, "slitscan-" + stamp.raw() + "." + vc.format);
@@ -1085,6 +1113,11 @@ namespace Gui {
     Gel::IMasterTickServer ticker;
     bool playing = false;
     cv::Mat scan_frame; // the latest finished frame, for the canvas
+
+    // The user's own settings, as their file has them. What is in
+    // force (obtain_main_settings()) is these with a loaded setup's
+    // laid over them.
+    MainSettings::Settings user_settings;
 
     // the time counter; see show_time_counter()
     long long counter_frame = -1;      // the frame on show, as the scanner numbers it; -1 for none

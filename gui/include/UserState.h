@@ -2,9 +2,10 @@
 // the next, such as the folder gels were last loaded from.
 //
 // They belong to the user and not to a setup, so they are kept apart
-// from the setup files: in slitscan/state.ini in the user's
-// configuration folder (~/.config, unless XDG_CONFIG_HOME says
-// otherwise).
+// from the setup files: in state.ini in our folder among the user's
+// configuration files (~/.config/slitscan; see Paths.h). What the
+// user sets in the Settings dialog is kept beside it, in
+// config.yaml; see Settings.h.
 #pragma once
 
 #include <filesystem>
@@ -50,8 +51,6 @@ namespace Gui {
   private:
     static inline const std::string group = "state";
 
-    static std::string pathname() {
-      return Glib::build_filename(Glib::get_user_config_dir(), "slitscan", "state.ini");
-    }
+    static std::string pathname() { return Paths::state_file(); }
   };
 }

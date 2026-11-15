@@ -57,6 +57,8 @@ namespace Gui {
 #include <Floating.h>
 #include <Splash.h>
 #include <EntryEditor.h>
+#include <Paths.h>
+#include <Settings.h>
 #include <VideoConfig.h>
 #include <MainSettings.h>
 #include <GelConfig.h>

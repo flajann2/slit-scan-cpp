@@ -92,6 +92,11 @@ namespace Gui {
       filter->add_mime_type("image/webp");
       filter->add_mime_type("video/*");
       gel_chooser->add_filter(filter);
+
+      // the chooser opens where gels were last loaded from, and
+      // Import and Export where a setup was last imported or exported
+      gel_folder = UserState::get(UserState::gel_folder);
+      archive_folder = UserState::get(UserState::archive_folder);
     }
 
     static unique_ptr<GelSelection> create() { return make_unique<GelSelection>(); }
@@ -217,14 +222,37 @@ namespace Gui {
         setup_chooser->set_current_name(stem + (zip ? SetupArchive::extension : ".yaml"));
       }
 
-      setup_chooser->signal_response().connect([this, then](int response) {
+      // Import and Export open in the folder one of them last used,
+      // if it is still there, in this run or an earlier one.
+      if (zip && !archive_folder.empty() && Glib::file_test(archive_folder, Glib::FileTest::IS_DIR)) {
+        try {
+          setup_chooser->set_current_folder(Gio::File::create_for_path(archive_folder));
+        } catch (const Glib::Error& e) {
+          cout << "Could not open the chooser in " << archive_folder << ": " << e.what() << endl;
+        }
+      }
+
+      setup_chooser->signal_response().connect([this, then, zip](int response) {
         if (response == GTK_RESPONSE_ACCEPT) {
-          if (auto file = setup_chooser->get_file())
+          if (auto file = setup_chooser->get_file()) {
+            if (zip)
+              remember_archive_folder(file);
             then(file->get_path());
+          }
         }
         setup_chooser.reset();
       });
       setup_chooser->show();
+    }
+
+    // Remembers the folder a setup was imported from or exported to,
+    // for next time and for the next run.
+    void remember_archive_folder(const Glib::RefPtr<Gio::File>& file) {
+      const auto parent = file->get_parent();
+      if (!parent || parent->get_path().empty() || parent->get_path() == archive_folder)
+        return;
+      archive_folder = parent->get_path();
+      UserState::set(UserState::archive_folder, archive_folder);
     }
 
     // The setup as it stands, gathered from the dialogs and the lists.
@@ -412,14 +440,39 @@ namespace Gui {
     
     void on_left_gel() {
       cout << "left gel clicked." << endl;
-      current_place = GelAsset::Placement::left;
-      gel_chooser->show();
+      show_gel_chooser(GelAsset::Placement::left);
     }
     
     void on_right_gel() {
       cout << "right gel clicked." << endl;
-      current_place = GelAsset::Placement::right;
+      show_gel_chooser(GelAsset::Placement::right);
+    }
+
+    // The gel chooser, for the side the gels are to go to. It opens
+    // in the folder gels were last chosen from, if that is still
+    // there, in this run or an earlier one.
+    void show_gel_chooser(GelAsset::Placement place) {
+      current_place = place;
+      if (!gel_folder.empty() && Glib::file_test(gel_folder, Glib::FileTest::IS_DIR)) {
+        try {
+          gel_chooser->set_current_folder(Gio::File::create_for_path(gel_folder));
+        } catch (const Glib::Error& e) {
+          cout << "Could not open the gel chooser in " << gel_folder << ": " << e.what() << endl;
+        }
+      }
       gel_chooser->show();
+    }
+
+    // Remembers the folder of a chosen gel, for next time and for
+    // the next run.
+    void remember_gel_folder(const Glib::RefPtr<Gio::File>& file) {
+      if (!file)
+        return;
+      const auto parent = file->get_parent();
+      if (!parent || parent->get_path().empty() || parent->get_path() == gel_folder)
+        return;
+      gel_folder = parent->get_path();
+      UserState::set(UserState::gel_folder, gel_folder);
     }
 
     // The camera as a gel. It is the default camera, and one camera
@@ -923,6 +976,8 @@ namespace Gui {
       if (r_id == GTK_RESPONSE_ACCEPT) {
         // Get the selected folder path
         auto filelist = gel_chooser->get_files2();
+        if (!filelist.empty())
+          remember_gel_folder(filelist.front());
         for (auto file : filelist) {
           // nothing comes back if the file is neither an image nor a video
           auto ga = GelAsset::create_gel_asset(file->get_path(), current_place);
@@ -1002,6 +1057,8 @@ namespace Gui {
 
     Glib::RefPtr<Gtk::FileFilter> filter;
     shared_ptr<Gtk::FileChooserNative> gel_chooser;
+    std::string gel_folder; // where gels were last chosen from
+    std::string archive_folder; // where a setup was last imported from or exported to
     list<string> chosen_files;
     list<shared_ptr<Gui::GelAsset>> assets; // we filter on Placement
  };

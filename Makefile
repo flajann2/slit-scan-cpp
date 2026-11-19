@@ -6,6 +6,8 @@
 #   make run ARGS="..."   # Build and run (e.g. ARGS=--no-splash)
 #   make readme           # Export README.org -> .github/README.md
 #   make release          # Check, tag, push tag, publish slit-scan to the AUR
+#   make flatpak-deps     # One-time: flatpak-builder, Flathub remote, runtime
+#   make flatpak flatpak-run   # Build, install and run the Flatpak
 #   make aur-publish-git  # Publish slit-scan-git to the AUR
 #   make clean / distclean
 #
@@ -25,6 +27,10 @@ PREFIX        ?= $(HOME)/.local
 JOBS          ?= $(shell nproc)
 ARGS          ?=
 
+# KEEP=1 leaves .flatpak-builder/build/<module>-N in place after a failure,
+# so the module's meson/CMake logs can be read.
+KEEP          ?=
+
 GITHUB_REMOTE ?= github
 BOOKMARK      ?= master
 AUR_ROOT      ?= /development/aur
@@ -36,6 +42,13 @@ README_MD     := .github/README.md
 README_EL     := tools/export-readme.el
 
 FLATPAK_YML   := packaging/flatpak/$(APP_ID).yml
+FLATPAK_REPO  := build-flatpak-repo
+# The module in the manifest that builds our own code; see flatpak-shell.
+FLATPAK_MODULE ?= $(PKG_NAME)
+FLATPAK_KEEP  := $(if $(KEEP),--keep-build-dirs,)
+# The runtime the manifest asks for, so flatpak-deps installs that one.
+FLATPAK_RUNTIME := $(shell sed -nE "s/^runtime-version: *'?([^']+)'?.*/\1/p" $(FLATPAK_YML))
+
 AUR_SRC       := packaging/aur/$(PKG_NAME)
 AUR_SRC_GIT   := packaging/aur/$(PKG_GIT)
 AUR_DEST      := $(AUR_ROOT)/$(PKG_NAME)
@@ -45,12 +58,16 @@ AUR_DEST_GIT  := $(AUR_ROOT)/$(PKG_GIT)
 VERSION := $(shell sed -nE 's/.*project\([^)]*VERSION[[:space:]]+([0-9]+(\.[0-9]+)*).*/\1/p' CMakeLists.txt | head -n1)
 TAG     := v$(VERSION)
 TARBALL := dist/$(PKG_NAME)-$(VERSION).tar.gz
+BUNDLE  := dist/$(PKG_NAME)-$(VERSION).flatpak
 
 CMAKE_COMMON := -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 .DEFAULT_GOAL := build
 .PHONY: help version deps configure build debug run run-debug install uninstall \
-        readme readme-check dist tag tag-push flatpak flatpak-run \
+        readme readme-check dist tag tag-push \
+        flatpak-deps flatpak-build flatpak flatpak-run flatpak-shell \
+        flatpak-repo flatpak-lint flatpak-lint-repo flatpak-bundle \
+        flatpak-uninstall \
         aur-prepare aur-check aur-test aur-publish \
         aur-prepare-git aur-publish-git release \
         clean clean-flatpak clean-aur distclean
@@ -58,7 +75,7 @@ CMAKE_COMMON := -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 # ---------------------------------------------------------------- info -------
 
 help: ## List the targets
-	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 version: ## Print the version from CMakeLists.txt
 	@echo $(VERSION)
@@ -129,12 +146,53 @@ tag-push: ## Push the tag to GitHub
 	git push $(GITHUB_REMOTE) $(TAG)
 
 # ------------------------------------------------------------- Flatpak -------
+# flatpak-builder caches each module in .flatpak-builder/, which --force-clean
+# does NOT remove: it only empties $(FLATPAK_DIR), which flatpak-builder
+# insists on. So every target here is incremental -- editing our own code
+# rebuilds only the $(FLATPAK_MODULE) module.
+
+flatpak-deps: ## One-time: flatpak-builder, Flathub remote, runtime and SDK
+	aura -S --needed flatpak flatpak-builder
+	flatpak remote-add --user --if-not-exists flathub \
+	  https://dl.flathub.org/repo/flathub.flatpakrepo
+	flatpak install --user --noninteractive flathub \
+	  org.gnome.Platform//$(FLATPAK_RUNTIME) \
+	  org.gnome.Sdk//$(FLATPAK_RUNTIME) \
+	  org.flatpak.Builder
+
+flatpak-build: ## Build the Flatpak without installing it
+	flatpak-builder --force-clean $(FLATPAK_KEEP) $(FLATPAK_DIR) $(FLATPAK_YML)
 
 flatpak: ## Build and install the Flatpak for this user
-	flatpak-builder --user --install --force-clean $(FLATPAK_DIR) $(FLATPAK_YML)
+	flatpak-builder --user --install --force-clean $(FLATPAK_KEEP) \
+	  $(FLATPAK_DIR) $(FLATPAK_YML)
 
 flatpak-run: ## Run the installed Flatpak
 	flatpak run $(APP_ID) $(ARGS)
+
+flatpak-shell: ## Shell in the sandbox at our module's build dir, to iterate
+	flatpak-builder --force-clean --build-shell=$(FLATPAK_MODULE) \
+	  $(FLATPAK_DIR) $(FLATPAK_YML)
+
+flatpak-uninstall: ## Remove the installed Flatpak
+	flatpak uninstall --user --noninteractive $(APP_ID)
+
+flatpak-repo: ## Build and export to a local OSTree repo (for lint and bundle)
+	flatpak-builder --force-clean $(FLATPAK_KEEP) --repo=$(FLATPAK_REPO) \
+	  $(FLATPAK_DIR) $(FLATPAK_YML)
+
+flatpak-lint: ## Lint the manifest as Flathub's reviewers do
+	flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
+	  manifest $(FLATPAK_YML)
+
+flatpak-lint-repo: flatpak-repo ## Lint the exported repo (needs a full export)
+	flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
+	  repo $(FLATPAK_REPO)
+
+flatpak-bundle: flatpak-repo ## Single-file .flatpak to hand to someone
+	@mkdir -p dist
+	flatpak build-bundle $(FLATPAK_REPO) $(BUNDLE) $(APP_ID)
+	@echo "Created $(BUNDLE); install it with 'flatpak install --user $(BUNDLE)'"
 
 # ----------------------------------------------------- AUR: slit-scan --------
 
@@ -193,7 +251,7 @@ clean: ## Remove build products, keep CMake configuration
 	-cmake --build $(DEBUG_DIR) --target clean 2>/dev/null
 
 clean-flatpak: ## Remove Flatpak build output
-	rm -rf $(FLATPAK_DIR) .flatpak-builder *.flatpak
+	rm -rf $(FLATPAK_DIR) $(FLATPAK_REPO) .flatpak-builder *.flatpak
 
 clean-aur: ## Remove makepkg output from packaging/aur/
 	find $(AUR_SRC) $(AUR_SRC_GIT) -mindepth 1 -maxdepth 1 ! -name PKGBUILD -exec rm -rf {} +

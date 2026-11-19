@@ -851,7 +851,9 @@ namespace Gel {
       }
 
       const float side = float(turned_softness / 6.0);
-      const cv::Mat kernel = (cv::Mat_<float>(1, 3) << side, 1.0f - 2.0f * side, side);
+
+      float taps[3] = {side, 1.0f - 2.0f * side, side};
+      const cv::Mat kernel = cv::Mat(1, 3, CV_32F, taps).clone();
 
       auto cut = [&](const cv::Mat& from, cv::Mat& to) {
         cv::Mat fine;
